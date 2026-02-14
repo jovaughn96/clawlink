@@ -1,0 +1,17 @@
+{
+  "name": "edenchat-bridge",
+  "version": "1.0.0",
+  "description": "Local bridge between Firestore and OpenClaw gateway",
+  "main": "bridge.js",
+  "scripts": {
+    "start": "node bridge.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.6.0",
+    "ws": "^8.18.0"
+  },
+  "private": true
+}

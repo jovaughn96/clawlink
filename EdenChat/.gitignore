@@ -65,5 +65,29 @@ node_modules/
 # dotenv environment variables file
 .env
 
+# Firebase service account keys
+serviceAccountKey.json
+**/serviceAccountKey.json
+
+# Bridge device identity (private key)
+.device-identity.json
+
 # dataconnect generated files
 .dataconnect
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Xcode
+ios/EdenChat.xcodeproj/xcuserdata/
+ios/EdenChat.xcodeproj/project.xcworkspace/xcuserdata/
+ios/.spm/
+ios/DerivedData/
+xcuserdata/
+
+# Swift Package Manager
+ios/EdenChat.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+
+# Firebase config (regenerate per-device via firebase apps:sdkconfig)
+ios/EdenChat/GoogleService-Info.plist

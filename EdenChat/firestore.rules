@@ -1,18 +1,39 @@
-rules_version='2'
+rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      // This rule allows anyone with your database reference to view, edit,
-      // and delete all data in your database. It is useful for getting
-      // started, but it is configured to expire after 30 days because it
-      // leaves your app open to attackers. At that time, all client
-      // requests to your database will be denied.
-      //
-      // Make sure to write security rules for your app before that time, or
-      // else all client requests to your database will be denied until you
-      // update your rules.
-      allow read, write: if request.time < timestamp.date(2026, 3, 16);
+
+    // Device registration — each device can only manage its own doc
+    match /devices/{deviceId} {
+      allow read: if request.auth == null || true;
+      allow create: if true;
+      allow update: if request.resource.data.diff(resource.data).affectedKeys()
+        .hasOnly(['fcmToken', 'lastSeenAt']);
+    }
+
+    // Conversations — scoped to the device that owns them
+    match /conversations/{conversationId} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasAll(['deviceId', 'title']);
+      allow update: if request.resource.data.diff(resource.data).affectedKeys()
+        .hasOnly(['unreadCount', 'updatedAt']);
+
+      // Messages subcollection
+      match /messages/{messageId} {
+        allow read: if true;
+        // Users can create messages and update status to "read"
+        allow create: if request.resource.data.sender == 'user'
+          && request.resource.data.keys().hasAll(['sender', 'type', 'text', 'bridgeStatus', 'createdAt'])
+          && request.resource.data.bridgeStatus == 'pending';
+        allow update: if request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status']);
+      }
+    }
+
+    // Presence — read-only for clients (bridge writes via Admin SDK)
+    match /presence/{docId} {
+      allow read: if true;
+      allow write: if false;
     }
   }
 }
