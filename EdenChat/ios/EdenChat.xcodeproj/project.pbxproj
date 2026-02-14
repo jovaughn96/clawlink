@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0199B6C72BD6E8BA200E002F /* EdenTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA31F41CD6799B9A0CDD68B3 /* EdenTheme.swift */; };
 		075DED7B852C48F0A473106F /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 797089850D3F45290BC81AC9 /* FirebaseCore */; };
 		10E35899BCAC7E689A35416C /* ChatViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C88D0BF6951CE6AEB776A8BD /* ChatViewModel.swift */; };
 		3F9BC40C8B921FBCB6084A8A /* Conversation.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF01731D4E55291A9720AFD5 /* Conversation.swift */; };
@@ -39,6 +40,7 @@
 		7C68D74D0FA5698E15547153 /* MessageInputBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageInputBar.swift; sourceTree = "<group>"; };
 		9E72995051E653F13F834088 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		B047191232E09FF77CBD772B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		BA31F41CD6799B9A0CDD68B3 /* EdenTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EdenTheme.swift; sourceTree = "<group>"; };
 		C2085CD101EF4E9D1E33C5EF /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		C88D0BF6951CE6AEB776A8BD /* ChatViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatViewModel.swift; sourceTree = "<group>"; };
 		D4921AB2C98259DB6803824B /* BiometricService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricService.swift; sourceTree = "<group>"; };
@@ -116,6 +118,7 @@
 				6722A592A5D6BB266F701BDD /* BiometricGate.swift */,
 				EB3091126C84BAC66F4D0C45 /* ChatView.swift */,
 				C88D0BF6951CE6AEB776A8BD /* ChatViewModel.swift */,
+				BA31F41CD6799B9A0CDD68B3 /* EdenTheme.swift */,
 				0B601B9695007B7186138C2B /* MessageBubble.swift */,
 				7C68D74D0FA5698E15547153 /* MessageInputBar.swift */,
 				32EB6554AFD64E230F330CB2 /* TypingIndicator.swift */,
@@ -155,7 +158,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				LastUpgradeCheck = 2620;
+				LastUpgradeCheck = 1640;
 			};
 			buildConfigurationList = 69584431F3AC0E476DA551FC /* Build configuration list for PBXProject "EdenChat" */;
 			compatibilityVersion = "Xcode 14.0";
@@ -201,6 +204,7 @@
 				10E35899BCAC7E689A35416C /* ChatViewModel.swift in Sources */,
 				3F9BC40C8B921FBCB6084A8A /* Conversation.swift in Sources */,
 				469FA7138DA291CE71E9D63F /* EdenChatApp.swift in Sources */,
+				0199B6C72BD6E8BA200E002F /* EdenTheme.swift in Sources */,
 				9B4D5B193BE643BAB0306D9A /* FirestoreService.swift in Sources */,
 				6556A5042A4182BE281D0C97 /* KeychainService.swift in Sources */,
 				BFF4B91541E4606B44F3E27A /* Message.swift in Sources */,
@@ -221,8 +225,11 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
 				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = NO;
+				DEVELOPMENT_TEAM = H3NX3JGZ4J;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = EdenChat/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Eden;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -247,8 +254,11 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
 				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = NO;
+				DEVELOPMENT_TEAM = H3NX3JGZ4J;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = EdenChat/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Eden;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -300,10 +310,8 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = H3NX3JGZ4J;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -324,7 +332,6 @@
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -366,10 +373,8 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = H3NX3JGZ4J;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -383,7 +388,6 @@
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.0;

@@ -11,6 +11,15 @@ final class ChatViewModel {
     var isLoading = true
     var errorMessage: String?
 
+    var suggestedPrompts: [String] {
+        [
+            "What can you help me with?",
+            "Tell me something interesting",
+            "Help me brainstorm ideas",
+            "Write me a short poem"
+        ]
+    }
+
     private let firestoreService = FirestoreService()
     private let deviceId = KeychainService.getOrCreateDeviceId()
     private var messageListener: ListenerRegistration?
