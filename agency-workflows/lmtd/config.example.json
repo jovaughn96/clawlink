@@ -1,0 +1,27 @@
+{
+  "agency": "LMTD Studios",
+  "qualifiedThreshold": 70,
+  "comms": {
+    "provider": "slack",
+    "channel": "#ops-ai"
+  },
+  "crm": {
+    "type": "sqlite",
+    "dbPath": "./agency-workflows/lmtd/lmtd_ops.db"
+  },
+  "proposals": {
+    "format": "pdf",
+    "sourceTemplate": "./agency-workflows/lmtd/templates/proposal-template.md",
+    "outputDir": "./agency-workflows/lmtd/proposals"
+  },
+  "projectTracker": {
+    "type": "clickup",
+    "workspaceId": "",
+    "spaceId": "",
+    "listId": ""
+  },
+  "secrets": {
+    "slackBotToken": "SET_ME",
+    "clickupApiToken": "SET_ME"
+  }
+}
