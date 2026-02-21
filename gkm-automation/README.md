@@ -7,6 +7,7 @@ Local 24/7 automation bridge for production control at Global Kingdom Ministries
 - Secure local API with API-key auth (`x-api-key`)
 - Action endpoint: `POST /api/action`
 - Natural-language command endpoint: `POST /api/command`
+- Tablet control hub UI: `GET /hub` and `POST /hub/run` (token protected)
 - Companion support (info/buttons/press)
 - Resolume OSC support (trigger clip, clear layer, clear all)
 - Action allowlist policy via env (`ALLOWED_ACTIONS`)
@@ -100,6 +101,8 @@ launchctl start ai.gkm.automation
 # status
 launchctl list | grep ai.gkm.automation
 ```
+
+To access from iPad on LAN, set `HOST=0.0.0.0` in `.env` and use `http://<mac-mini-ip>:17816/hub`.
 
 ## ProPresenter wiring notes
 

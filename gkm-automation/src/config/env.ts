@@ -29,5 +29,6 @@ export const env = {
   propresenterHost: process.env.PROPRESENTER_HOST ?? "172.16.14.223",
   propresenterPort: Number(process.env.PROPRESENTER_PORT ?? 64910),
   propresenterPass: process.env.PROPRESENTER_PASSWORD,
-  sqlitePath: process.env.SQLITE_PATH ?? "./data/audit.db"
+  sqlitePath: process.env.SQLITE_PATH ?? "./data/audit.db",
+  hubToken: process.env.HUB_TOKEN ?? ""
 };
