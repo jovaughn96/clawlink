@@ -1,13 +1,54 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { ChatMessages, Message } from "@/components/chat-messages";
 import { ChatInput } from "@/components/chat-input";
+
+const CHAT_MESSAGES_STORAGE_KEY = "clawlink:chat:messages";
+const CHAT_USER_STORAGE_KEY = "clawlink:chat:user";
+
+function getOrCreateChatUser(): string {
+  const existing = window.localStorage.getItem(CHAT_USER_STORAGE_KEY);
+  if (existing && existing.trim().length > 0) {
+    return existing;
+  }
+
+  const created = `clawlink-${crypto.randomUUID()}`;
+  window.localStorage.setItem(CHAT_USER_STORAGE_KEY, created);
+  return created;
+}
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [streaming, setStreaming] = useState(false);
+  const [chatUser, setChatUser] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    const storedMessages = window.localStorage.getItem(CHAT_MESSAGES_STORAGE_KEY);
+    if (storedMessages) {
+      try {
+        const parsed = JSON.parse(storedMessages);
+        if (Array.isArray(parsed)) {
+          const sanitized = parsed.filter(
+            (msg): msg is Message =>
+              msg &&
+              (msg.role === "user" || msg.role === "assistant") &&
+              typeof msg.content === "string"
+          );
+          setMessages(sanitized);
+        }
+      } catch {
+        // Ignore malformed localStorage data.
+      }
+    }
+
+    setChatUser(getOrCreateChatUser());
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(CHAT_MESSAGES_STORAGE_KEY, JSON.stringify(messages));
+  }, [messages]);
 
   const handleSend = useCallback(
     async (text: string) => {
@@ -29,6 +70,7 @@ export default function ChatPage() {
               role: m.role,
               content: m.content,
             })),
+            user: chatUser,
           }),
           signal: abortRef.current.signal,
         });
@@ -115,13 +157,13 @@ export default function ChatPage() {
         abortRef.current = null;
       }
     },
-    [messages]
+    [messages, chatUser]
   );
 
   return (
     <div className="flex h-full flex-col">
       <ChatMessages messages={messages} />
-      <ChatInput onSend={handleSend} disabled={streaming} />
+      <ChatInput onSend={handleSend} disabled={streaming || !chatUser} />
     </div>
   );
 }

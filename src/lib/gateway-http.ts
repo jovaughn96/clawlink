@@ -10,7 +10,8 @@ export interface ChatMessage {
 
 export async function chatCompletion(
   messages: ChatMessage[],
-  agentId?: string
+  agentId?: string,
+  user?: string
 ): Promise<Response> {
   const body: Record<string, unknown> = {
     model: "openclaw",
@@ -19,6 +20,9 @@ export async function chatCompletion(
   };
   if (agentId) {
     body.agent_id = agentId;
+  }
+  if (user) {
+    body.user = user;
   }
 
   return fetch(`${GATEWAY_URL}/v1/chat/completions`, {
