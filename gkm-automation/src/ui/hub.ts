@@ -3,10 +3,6 @@ import { env } from "../config/env.js";
 
 export const hubRouter = Router();
 
-function checkHubToken(token?: string): boolean {
-  return Boolean(env.hubToken) && token === env.hubToken;
-}
-
 hubRouter.get("/", (_req, res) => {
   res.type("html").send(`<!doctype html>
 <html>
@@ -26,8 +22,7 @@ pre { background:#111; padding:12px; border-radius:8px; white-space:pre-wrap; }
 <body>
 <div class="wrap">
 <h2>GKM Control Hub</h2>
-<small>Token required. Commands run through /api/command.</small>
-<input id="token" placeholder="Hub token" />
+<small>Commands run through /api/command.</small>
 <div class="grid">
 <button onclick="runCmd('go live')">Go Live</button>
 <button onclick="runCmd('clear keys')">Clear Keys</button>
@@ -40,8 +35,7 @@ pre { background:#111; padding:12px; border-radius:8px; white-space:pre-wrap; }
 </div>
 <script>
 async function runCmd(command){
-  const token=document.getElementById('token').value.trim();
-  const res=await fetch('/hub/run',{method:'POST',headers:{'content-type':'application/json','x-hub-token':token},body:JSON.stringify({command})});
+  const res=await fetch('/hub/run',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({command})});
   const data=await res.json();
   document.getElementById('out').textContent=JSON.stringify(data,null,2);
 }
@@ -51,12 +45,6 @@ async function runCmd(command){
 });
 
 hubRouter.post("/run", async (req, res) => {
-  const token = req.header("x-hub-token") ?? "";
-  if (!checkHubToken(token)) {
-    res.status(401).json({ ok: false, error: "invalid_hub_token" });
-    return;
-  }
-
   const command = req.body?.command;
   if (!command || typeof command !== "string") {
     res.status(400).json({ ok: false, error: "command_required" });

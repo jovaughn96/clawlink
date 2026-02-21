@@ -7,7 +7,7 @@ Local 24/7 automation bridge for production control at Global Kingdom Ministries
 - Secure local API with API-key auth (`x-api-key`)
 - Action endpoint: `POST /api/action`
 - Natural-language command endpoint: `POST /api/command`
-- Tablet control hub UI: `GET /hub` and `POST /hub/run` (token protected)
+- Tablet control hub UI: `GET /hub` and `POST /hub/run`
 - Companion support (info/buttons/press)
 - Resolume OSC support (trigger clip, clear layer, clear all)
 - Action allowlist policy via env (`ALLOWED_ACTIONS`)
