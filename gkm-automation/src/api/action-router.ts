@@ -2,7 +2,13 @@ import { Router } from "express";
 import { z } from "zod";
 import { env } from "../config/env.js";
 import { keyLayers, meAliases, scenePresets, inputAliases } from "../config/profile.js";
-import { runMacro, setProgramInput, setProgramInputForMe } from "../adapters/atem.js";
+import {
+  getProgramInputForMe,
+  runMacro,
+  setOverlayForMe,
+  setProgramInput,
+  setProgramInputForMe
+} from "../adapters/atem.js";
 import { clearLayer, nextSlide, previousSlide, triggerPlaylistItem } from "../adapters/propresenter.js";
 import { writeAudit } from "../core/audit.js";
 import type { ActionName, ActionResult } from "../types/actions.js";
@@ -28,6 +34,41 @@ const actionSchema = z.discriminatedUnion("action", [
     payload: z.object({
       scene: z.string().min(1),
       me: z.union([z.literal(1), z.literal(2)]).optional()
+    }),
+    requestId: z.string().optional(),
+    source: z.string().optional()
+  }),
+  z.object({
+    action: z.literal("atem.overlay.set"),
+    payload: z.object({
+      me: z.union([z.literal(1), z.literal(2)]),
+      layer: z.enum(["usk1", "usk2"]),
+      enabled: z.boolean()
+    }),
+    requestId: z.string().optional(),
+    source: z.string().optional()
+  }),
+  z.object({
+    action: z.literal("atem.scene.compose"),
+    payload: z.object({
+      scene: z.string().min(1),
+      me: z.union([z.literal(1), z.literal(2)]).optional(),
+      overlays: z
+        .object({
+          usk1: z.boolean().optional(),
+          usk2: z.boolean().optional()
+        })
+        .optional()
+    }),
+    requestId: z.string().optional(),
+    source: z.string().optional()
+  }),
+  z.object({
+    action: z.literal("atem.feed.mirror"),
+    payload: z.object({
+      fromMe: z.union([z.literal(1), z.literal(2)]),
+      toMe: z.union([z.literal(1), z.literal(2)]),
+      includeOverlays: z.boolean().optional()
     }),
     requestId: z.string().optional(),
     source: z.string().optional()
@@ -215,6 +256,91 @@ actionRouter.post("/action", async (req, res) => {
           requestId: body.requestId,
           message: `ATEM scene ${body.payload.scene} -> input ${resolved.input} on ME${me}`,
           data,
+          timestamp: ts
+        };
+        break;
+      }
+      case "atem.overlay.set": {
+        const data = env.dryRun
+          ? {
+              target: env.atemIp,
+              me: body.payload.me,
+              layer: body.payload.layer,
+              enabled: body.payload.enabled,
+              simulated: true
+            }
+          : await setOverlayForMe(body.payload.me, body.payload.layer, body.payload.enabled);
+        result = {
+          ok: true,
+          action: body.action,
+          dryRun: env.dryRun,
+          requestId: body.requestId,
+          message: `ATEM ${body.payload.layer.toUpperCase()} on ME${body.payload.me} -> ${body.payload.enabled ? "ON" : "OFF"}`,
+          data,
+          timestamp: ts
+        };
+        break;
+      }
+      case "atem.scene.compose": {
+        const resolved = resolveScene(body.payload.scene);
+        const me = body.payload.me ?? resolved.me;
+
+        if (!env.dryRun) {
+          await setProgramInputForMe(resolved.input, me);
+          if (body.payload.overlays?.usk1 !== undefined) {
+            await setOverlayForMe(me, "usk1", body.payload.overlays.usk1);
+          }
+          if (body.payload.overlays?.usk2 !== undefined) {
+            await setOverlayForMe(me, "usk2", body.payload.overlays.usk2);
+          }
+        }
+
+        result = {
+          ok: true,
+          action: body.action,
+          dryRun: env.dryRun,
+          requestId: body.requestId,
+          message: `ATEM composed scene ${body.payload.scene} on ME${me}`,
+          data: {
+            target: env.atemIp,
+            scene: body.payload.scene,
+            input: resolved.input,
+            me,
+            overlays: body.payload.overlays ?? {},
+            simulated: env.dryRun
+          },
+          timestamp: ts
+        };
+        break;
+      }
+      case "atem.feed.mirror": {
+        if (body.payload.fromMe === body.payload.toMe) {
+          throw new Error("fromMe and toMe must be different");
+        }
+
+        const sourceInput = env.dryRun ? 0 : await getProgramInputForMe(body.payload.fromMe);
+
+        if (!env.dryRun) {
+          await setProgramInputForMe(sourceInput, body.payload.toMe);
+          if (body.payload.includeOverlays) {
+            throw new Error("Overlay mirroring is not implemented yet; use explicit atem.overlay.set");
+          }
+        }
+
+        result = {
+          ok: true,
+          action: body.action,
+          dryRun: env.dryRun,
+          requestId: body.requestId,
+          message: `Mirrored ME${body.payload.fromMe} program to ME${body.payload.toMe}`,
+          data: {
+            target: env.atemIp,
+            fromMe: body.payload.fromMe,
+            toMe: body.payload.toMe,
+            input: sourceInput,
+            includeOverlays: body.payload.includeOverlays ?? false,
+            simulated: env.dryRun
+          },
           timestamp: ts
         };
         break;

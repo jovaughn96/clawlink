@@ -19,6 +19,9 @@ Local 24/7 automation bridge for production control at Global Kingdom Ministries
 - `atem.program.set` (input on ME1)
 - `atem.me.program.set` (input + me)
 - `atem.scene.take` (scene preset + optional me override)
+- `atem.overlay.set` (USK1/USK2 on a specific ME)
+- `atem.scene.compose` (scene + optional overlay states in one call)
+- `atem.feed.mirror` (mirror program input ME-to-ME)
 - `atem.macro.run` (macroId)
 - `propresenter.trigger` (playlistId + itemId)
 - `propresenter.next`
@@ -86,6 +89,8 @@ launchctl list | grep ai.gkm.automation
   - `host-input`
 
 You can fetch this mapping through `system.profile.get`.
+
+Note: `atem.feed.mirror` currently mirrors program input only. Overlay mirroring should be done explicitly with `atem.overlay.set`.
 
 ## Next steps
 

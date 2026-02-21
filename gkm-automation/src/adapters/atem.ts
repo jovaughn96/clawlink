@@ -4,7 +4,13 @@ type AtemConnectionLike = {
   connect: (ip: string) => Promise<void>;
   disconnect: () => void;
   connected: boolean;
+  state?: {
+    video?: {
+      mixEffects?: Array<{ programInput?: number }>;
+    };
+  };
   changeProgramInput: (input: number, me?: number) => void;
+  changeUpstreamKeyerOnAir?: (onAir: boolean, keyer?: number, me?: number) => void;
   macro: {
     runMacro: (macroId: number) => void;
   };
@@ -42,6 +48,34 @@ export async function setProgramInputForMe(
   const atem = await getLiveConnection();
   atem.changeProgramInput(input, me - 1);
   return { target: env.atemIp, input, me };
+}
+
+export async function setOverlayForMe(
+  me: 1 | 2,
+  layer: "usk1" | "usk2",
+  enabled: boolean
+): Promise<{ target: string; me: 1 | 2; layer: "usk1" | "usk2"; enabled: boolean }> {
+  if (env.atemMock) {
+    return { target: env.atemIp, me, layer, enabled };
+  }
+
+  const atem = await getLiveConnection();
+  if (!atem.changeUpstreamKeyerOnAir) {
+    throw new Error("ATEM library missing upstream keyer control method");
+  }
+
+  const keyerIndex = layer === "usk1" ? 0 : 1;
+  atem.changeUpstreamKeyerOnAir(enabled, keyerIndex, me - 1);
+  return { target: env.atemIp, me, layer, enabled };
+}
+
+export async function getProgramInputForMe(me: 1 | 2): Promise<number> {
+  const atem = await getLiveConnection();
+  const value = atem.state?.video?.mixEffects?.[me - 1]?.programInput;
+  if (typeof value !== "number") {
+    throw new Error("Could not read program input for ME bus");
+  }
+  return value;
 }
 
 export async function runMacro(macroId: number): Promise<{ target: string; macroId: number }> {
