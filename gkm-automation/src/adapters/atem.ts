@@ -6,10 +6,11 @@ type AtemConnectionLike = {
   connected: boolean;
   state?: {
     video?: {
-      mixEffects?: Array<{ programInput?: number }>;
+      mixEffects?: Array<{ programInput?: number; previewInput?: number }>;
     };
   };
   changeProgramInput: (input: number, me?: number) => void;
+  changePreviewInput?: (input: number, me?: number) => void;
   changeUpstreamKeyerOnAir?: (onAir: boolean, keyer?: number, me?: number) => void;
   macro: {
     runMacro: (macroId: number) => void;
@@ -35,6 +36,22 @@ async function getLiveConnection(): Promise<AtemConnectionLike> {
 export async function setProgramInput(input: number): Promise<{ target: string; input: number }> {
   const result = await setProgramInputForMe(input, 1);
   return { target: result.target, input: result.input };
+}
+
+export async function setPreviewInputForMe(
+  input: number,
+  me: 1 | 2
+): Promise<{ target: string; input: number; me: 1 | 2 }> {
+  if (env.atemMock) {
+    return { target: env.atemIp, input, me };
+  }
+
+  const atem = await getLiveConnection();
+  if (!atem.changePreviewInput) {
+    throw new Error("ATEM library missing preview control method");
+  }
+  atem.changePreviewInput(input, me - 1);
+  return { target: env.atemIp, input, me };
 }
 
 export async function setProgramInputForMe(

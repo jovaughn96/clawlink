@@ -1,5 +1,6 @@
 export type ActionName =
   | "atem.program.set"
+  | "atem.preview.set"
   | "atem.me.program.set"
   | "atem.scene.take"
   | "atem.overlay.set"
@@ -21,6 +22,7 @@ export type ActionName =
 
 export type ActionPayloadMap = {
   "atem.program.set": { input: number };
+  "atem.preview.set": { input: number; me?: 1 | 2 };
   "atem.me.program.set": { input: number; me: 1 | 2 };
   "atem.scene.take": { scene: string; me?: 1 | 2 };
   "atem.overlay.set": {

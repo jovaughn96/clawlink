@@ -9,6 +9,7 @@ import {
   getProgramInputForMe,
   runMacro,
   setOverlayForMe,
+  setPreviewInputForMe,
   setProgramInput,
   setProgramInputForMe
 } from "../adapters/atem.js";
@@ -23,6 +24,15 @@ const actionSchema = z.discriminatedUnion("action", [
   z.object({
     action: z.literal("atem.program.set"),
     payload: z.object({ input: z.number().int().min(1).max(20) }),
+    requestId: z.string().optional(),
+    source: z.string().optional()
+  }),
+  z.object({
+    action: z.literal("atem.preview.set"),
+    payload: z.object({
+      input: z.number().int().min(1).max(20),
+      me: z.union([z.literal(1), z.literal(2)]).optional()
+    }),
     requestId: z.string().optional(),
     source: z.string().optional()
   }),
@@ -389,6 +399,27 @@ actionRouter.post("/action", async (req, res) => {
           dryRun: env.dryRun,
           requestId: body.requestId,
           message: `ATEM program set -> input ${body.payload.input}`,
+          data,
+          timestamp: ts
+        };
+        break;
+      }
+      case "atem.preview.set": {
+        const me = body.payload.me ?? 1;
+        const data = env.dryRun
+          ? {
+              target: env.atemIp,
+              input: body.payload.input,
+              me,
+              simulated: true
+            }
+          : await setPreviewInputForMe(body.payload.input, me);
+        result = {
+          ok: true,
+          action: body.action,
+          dryRun: env.dryRun,
+          requestId: body.requestId,
+          message: `ATEM ME${me} preview set -> input ${body.payload.input}`,
           data,
           timestamp: ts
         };
