@@ -21,10 +21,25 @@ service cloud.firestore {
       // Messages subcollection
       match /messages/{messageId} {
         allow read: if true;
-        // Users can create messages and update status to "read"
+        // Users can create text/image messages and update status to "read"
         allow create: if request.resource.data.sender == 'user'
-          && request.resource.data.keys().hasAll(['sender', 'type', 'text', 'bridgeStatus', 'createdAt'])
-          && request.resource.data.bridgeStatus == 'pending';
+          && request.resource.data.keys().hasAll(['sender', 'type', 'bridgeStatus', 'createdAt'])
+          && request.resource.data.bridgeStatus == 'pending'
+          && (
+            // Text message
+            (
+              request.resource.data.type == 'text'
+              && request.resource.data.keys().hasAll(['text'])
+            )
+            ||
+            // Image message
+            (
+              request.resource.data.type == 'image'
+              && request.resource.data.keys().hasAll(['imageUrl'])
+              // caption is optional, but if present must be a string
+              && (!request.resource.data.keys().hasAny(['text']) || request.resource.data.text is string)
+            )
+          );
         allow update: if request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['status']);
       }
