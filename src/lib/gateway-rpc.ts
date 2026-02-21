@@ -40,7 +40,8 @@ export async function gatewayConnect(): Promise<HelloOkPayload> {
   const wsUrl = GATEWAY_URL.replace(/^https/, "wss").replace(/^http/, "ws");
 
   return new Promise((resolve, reject) => {
-    const ws = new WebSocket(wsUrl);
+    const originUrl = GATEWAY_URL.replace(/^wss/, "https").replace(/^ws/, "http");
+    const ws = new WebSocket(wsUrl, { headers: { Origin: originUrl } });
     const timeout = setTimeout(() => {
       ws.close();
       reject(new Error("Gateway connect timeout"));
@@ -64,10 +65,10 @@ export async function gatewayConnect(): Promise<HelloOkPayload> {
               minProtocol: PROTOCOL_VERSION,
               maxProtocol: PROTOCOL_VERSION,
               client: {
-                id: "gateway-client",
+                id: "openclaw-control-ui",
                 version: "1.0.0",
                 platform: "web",
-                mode: "cli",
+                mode: "ui",
               },
               caps: [],
               auth: { password: GATEWAY_TOKEN },
@@ -117,7 +118,8 @@ export async function rpcCall(
   const wsUrl = GATEWAY_URL.replace(/^https/, "wss").replace(/^http/, "ws");
 
   return new Promise((resolve, reject) => {
-    const ws = new WebSocket(wsUrl);
+    const originUrl = GATEWAY_URL.replace(/^wss/, "https").replace(/^ws/, "http");
+    const ws = new WebSocket(wsUrl, { headers: { Origin: originUrl } });
     const timeout = setTimeout(() => {
       ws.close();
       reject(new Error("RPC timeout"));
@@ -139,10 +141,10 @@ export async function rpcCall(
               minProtocol: PROTOCOL_VERSION,
               maxProtocol: PROTOCOL_VERSION,
               client: {
-                id: "gateway-client",
+                id: "openclaw-control-ui",
                 version: "1.0.0",
                 platform: "web",
-                mode: "cli",
+                mode: "ui",
               },
               caps: [],
               auth: { password: GATEWAY_TOKEN },
