@@ -77,7 +77,10 @@ launchctl list | grep ai.gkm.automation
 
 ## Church profile encoded
 
-- Inputs: follow/wide/three-quarter/wireless/jib/drum/handheld/host(aux/laptop)
+- Inputs: follow/wide/three-quarter/wireless/drum/handheld/host(aux/laptop)/playback-mini/loop
+- Jib camera is remapped to input `9` (SDI 5 is bad)
+- Playback Mini (ProPresenter/slide loop) is input `11`
+- Loop return is input `20` (used for ME1->ME2 workflow)
 - MEs: broadcast/live -> ME1, auditorium/lobby/atrium -> ME2
 - Key layer labels tracked: USK1 = ProPresenter, USK2 = GFXPC/TitleLive
 - Scene presets added:
