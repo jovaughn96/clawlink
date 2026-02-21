@@ -93,6 +93,34 @@ export function parseCommand(command: string): ParsedCommand {
     };
   }
 
+  const resolumeTrigger = normalized.match(/^resolume trigger layer (\d+) clip (\d+)$/);
+  if (resolumeTrigger) {
+    return {
+      normalized,
+      actionRequests: [
+        {
+          action: "resolume.clip.trigger",
+          payload: { layer: Number(resolumeTrigger[1]), clip: Number(resolumeTrigger[2]) }
+        }
+      ]
+    };
+  }
+
+  const resolumeClearLayer = normalized.match(/^resolume clear layer (\d+)$/);
+  if (resolumeClearLayer) {
+    return {
+      normalized,
+      actionRequests: [{ action: "resolume.layer.clear", payload: { layer: Number(resolumeClearLayer[1]) } }]
+    };
+  }
+
+  if (normalized === "resolume clear all") {
+    return {
+      normalized,
+      actionRequests: [{ action: "resolume.clear.all", payload: {} }]
+    };
+  }
+
   const ppNext = normalized.match(/^next slide(?: on ([a-z0-9\- ]+))?$/);
   if (ppNext) {
     return {

@@ -8,6 +8,7 @@ Local 24/7 automation bridge for production control at Global Kingdom Ministries
 - Action endpoint: `POST /api/action`
 - Natural-language command endpoint: `POST /api/command`
 - Companion support (info/buttons/press)
+- Resolume OSC support (trigger clip, clear layer, clear all)
 - Action allowlist policy via env (`ALLOWED_ACTIONS`)
 - Dry-run mode (`DRY_RUN=true` by default)
 - SQLite audit logging for every request/result

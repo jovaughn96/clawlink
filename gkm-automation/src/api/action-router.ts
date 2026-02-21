@@ -4,6 +4,7 @@ import { env } from "../config/env.js";
 import { keyLayers, meAliases, scenePresets, inputAliases } from "../config/profile.js";
 import { propresenterInstances } from "../config/propresenter-instances.js";
 import { companionConfig } from "../config/companion.js";
+import { resolumeConfig } from "../config/resolume.js";
 import {
   getProgramInputForMe,
   runMacro,
@@ -12,6 +13,7 @@ import {
   setProgramInputForMe
 } from "../adapters/atem.js";
 import { companionButtons, companionInfo, companionPressBank, companionPressLocation } from "../adapters/companion.js";
+import { clearAll as resolumeClearAll, clearLayer as resolumeClearLayer, triggerClip as resolumeTriggerClip } from "../adapters/resolume.js";
 import { clearLayer, nextSlide, previousSlide, triggerPlaylistItem } from "../adapters/propresenter.js";
 import { writeAudit } from "../core/audit.js";
 import { parseCommand } from "../core/command-parser.js";
@@ -142,6 +144,24 @@ const actionSchema = z.discriminatedUnion("action", [
     source: z.string().optional()
   }),
   z.object({
+    action: z.literal("resolume.clip.trigger"),
+    payload: z.object({ layer: z.number().int().min(1), clip: z.number().int().min(1) }),
+    requestId: z.string().optional(),
+    source: z.string().optional()
+  }),
+  z.object({
+    action: z.literal("resolume.layer.clear"),
+    payload: z.object({ layer: z.number().int().min(1) }),
+    requestId: z.string().optional(),
+    source: z.string().optional()
+  }),
+  z.object({
+    action: z.literal("resolume.clear.all"),
+    payload: z.object({}).default({}),
+    requestId: z.string().optional(),
+    source: z.string().optional()
+  }),
+  z.object({
     action: z.literal("system.profile.get"),
     payload: z.object({}).default({}),
     requestId: z.string().optional(),
@@ -256,6 +276,49 @@ actionRouter.post("/action", async (req, res) => {
         };
         break;
       }
+      case "resolume.clip.trigger": {
+        const data = env.dryRun
+          ? { host: resolumeConfig.host, layer: body.payload.layer, clip: body.payload.clip, simulated: true }
+          : await resolumeTriggerClip(body.payload.layer, body.payload.clip);
+        result = {
+          ok: true,
+          action: body.action,
+          dryRun: env.dryRun,
+          requestId: body.requestId,
+          message: `Resolume trigger layer ${body.payload.layer} clip ${body.payload.clip}`,
+          data,
+          timestamp: ts
+        };
+        break;
+      }
+      case "resolume.layer.clear": {
+        const data = env.dryRun
+          ? { host: resolumeConfig.host, layer: body.payload.layer, simulated: true }
+          : await resolumeClearLayer(body.payload.layer);
+        result = {
+          ok: true,
+          action: body.action,
+          dryRun: env.dryRun,
+          requestId: body.requestId,
+          message: `Resolume clear layer ${body.payload.layer}`,
+          data,
+          timestamp: ts
+        };
+        break;
+      }
+      case "resolume.clear.all": {
+        const data = env.dryRun ? { host: resolumeConfig.host, simulated: true } : await resolumeClearAll();
+        result = {
+          ok: true,
+          action: body.action,
+          dryRun: env.dryRun,
+          requestId: body.requestId,
+          message: "Resolume clear all",
+          data,
+          timestamp: ts
+        };
+        break;
+      }
       case "system.profile.get": {
         result = {
           ok: true,
@@ -300,6 +363,11 @@ actionRouter.post("/action", async (req, res) => {
               host: companionConfig.host,
               port: companionConfig.port,
               configuredAuth: Boolean(companionConfig.token)
+            },
+            resolume: {
+              host: resolumeConfig.host,
+              portIn: resolumeConfig.portIn,
+              portOut: resolumeConfig.portOut
             },
             profile: {
               scenes: Object.keys(scenePresets).length,

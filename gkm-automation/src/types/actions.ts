@@ -13,6 +13,9 @@ export type ActionName =
   | "companion.info"
   | "companion.buttons.list"
   | "companion.button.press"
+  | "resolume.clip.trigger"
+  | "resolume.layer.clear"
+  | "resolume.clear.all"
   | "system.health"
   | "system.profile.get";
 
@@ -43,6 +46,9 @@ export type ActionPayloadMap = {
   "companion.info": Record<string, never>;
   "companion.buttons.list": Record<string, never>;
   "companion.button.press": { page: number; bank?: number; row?: number; column?: number };
+  "resolume.clip.trigger": { layer: number; clip: number };
+  "resolume.layer.clear": { layer: number };
+  "resolume.clear.all": Record<string, never>;
   "system.health": Record<string, never>;
   "system.profile.get": Record<string, never>;
 };
