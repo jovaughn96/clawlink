@@ -98,7 +98,9 @@ launchctl list | grep ai.gkm.automation
 
 - Ensure ProPresenter API is enabled.
 - Main configured instance (primary): `Pro7 - PC` at `172.16.14.223:64910`.
-- Secondary configured instance: `Studio iMac` at `172.16.12.148:1025`.
+- Secondary configured instances:
+  - `Studio iMac` at `172.16.12.148:1025`
+  - `Playback Mini` at `172.16.14.222:1025`
 - Set `PROPRESENTER_NAME`, `PROPRESENTER_HOST`, `PROPRESENTER_PORT`, and `PROPRESENTER_PASSWORD` in `.env`.
 - `propresenter.trigger` expects playlist + item identifiers (stable IDs from API output).
 

@@ -24,6 +24,14 @@ export const propresenterInstances: ProPresenterInstance[] = [
     port: 1025,
     password: process.env.PROPRESENTER_STUDIO_PASSWORD,
     roles: ["studio", "booth"]
+  },
+  {
+    id: "pp-playback",
+    name: "Playback Mini",
+    host: "172.16.14.222",
+    port: 1025,
+    password: process.env.PROPRESENTER_PLAYBACK_PASSWORD,
+    roles: ["playback", "mini"]
   }
 ];
 
