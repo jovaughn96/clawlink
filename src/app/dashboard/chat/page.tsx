@@ -42,36 +42,61 @@ export default function ChatPage() {
 
         const decoder = new TextDecoder();
         let accumulated = "";
+        let sseBuffer = "";
+        let receivedDone = false;
 
-        while (true) {
+        while (!receivedDone) {
           const { done, value } = await reader.read();
           if (done) break;
 
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split("\n");
+          sseBuffer += decoder.decode(value, { stream: true });
+          sseBuffer = sseBuffer.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 
-          for (const line of lines) {
-            if (!line.startsWith("data: ")) continue;
-            const data = line.slice(6);
-            if (data === "[DONE]") continue;
+          let boundaryIndex = sseBuffer.indexOf("\n\n");
+          while (boundaryIndex !== -1) {
+            const rawEvent = sseBuffer.slice(0, boundaryIndex);
+            sseBuffer = sseBuffer.slice(boundaryIndex + 2);
+
+            const dataLines: string[] = [];
+            for (const line of rawEvent.split("\n")) {
+              if (!line.startsWith("data:")) continue;
+              const value = line.slice(5);
+              dataLines.push(value.startsWith(" ") ? value.slice(1) : value);
+            }
+
+            if (dataLines.length === 0) {
+              boundaryIndex = sseBuffer.indexOf("\n\n");
+              continue;
+            }
+
+            const data = dataLines.join("\n");
+            if (data === "[DONE]") {
+              receivedDone = true;
+              break;
+            }
 
             try {
               const parsed = JSON.parse(data);
               const delta = parsed.choices?.[0]?.delta?.content;
-              if (delta) {
-                accumulated += delta;
-                setMessages((prev) => {
-                  const copy = [...prev];
-                  copy[copy.length - 1] = {
-                    role: "assistant",
-                    content: accumulated,
-                  };
-                  return copy;
-                });
+              if (!delta) {
+                boundaryIndex = sseBuffer.indexOf("\n\n");
+                continue;
               }
+
+              accumulated += delta;
+              setMessages((prev) => {
+                const copy = [...prev];
+                copy[copy.length - 1] = {
+                  role: "assistant",
+                  content: accumulated,
+                };
+                return copy;
+              });
             } catch {
-              // skip malformed SSE lines
+              // skip malformed SSE data payloads
             }
+
+            boundaryIndex = sseBuffer.indexOf("\n\n");
           }
         }
       } catch (err) {

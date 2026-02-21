@@ -1,7 +1,8 @@
 import WebSocket from "ws";
+import { env } from "@/lib/env";
 
-const GATEWAY_URL = process.env.OPENCLAW_GATEWAY_URL!;
-const GATEWAY_TOKEN = process.env.OPENCLAW_GATEWAY_TOKEN!;
+const GATEWAY_URL = env.OPENCLAW_GATEWAY_URL;
+const GATEWAY_TOKEN = env.OPENCLAW_GATEWAY_TOKEN;
 
 interface RpcResponse {
   id: string;
@@ -31,7 +32,7 @@ export async function rpcCall(
           jsonrpc: "2.0",
           method: "connect",
           params: {
-            token: GATEWAY_TOKEN,
+            password: GATEWAY_TOKEN,
             role: "operator",
             client: "clawlink-web",
           },
@@ -50,7 +51,7 @@ export async function rpcCall(
             jsonrpc: "2.0",
             method: "authenticate",
             params: {
-              token: GATEWAY_TOKEN,
+              password: GATEWAY_TOKEN,
             },
             id: "auth-2",
           })

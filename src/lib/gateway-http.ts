@@ -1,5 +1,7 @@
-const GATEWAY_URL = process.env.OPENCLAW_GATEWAY_URL!;
-const GATEWAY_TOKEN = process.env.OPENCLAW_GATEWAY_TOKEN!;
+import { env } from "@/lib/env";
+
+const GATEWAY_URL = env.OPENCLAW_GATEWAY_URL;
+const GATEWAY_TOKEN = env.OPENCLAW_GATEWAY_TOKEN;
 
 export interface ChatMessage {
   role: "user" | "assistant" | "system";
