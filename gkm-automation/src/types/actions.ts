@@ -42,7 +42,7 @@ export type ActionPayloadMap = {
   "propresenter.clear": { target?: "all" | "slides" | "media" | "audio"; instance?: string };
   "companion.info": Record<string, never>;
   "companion.buttons.list": Record<string, never>;
-  "companion.button.press": { page: number; bank: number };
+  "companion.button.press": { page: number; bank?: number; row?: number; column?: number };
   "system.health": Record<string, never>;
   "system.profile.get": Record<string, never>;
 };

@@ -11,7 +11,7 @@ import {
   setProgramInput,
   setProgramInputForMe
 } from "../adapters/atem.js";
-import { companionButtons, companionInfo, companionPress } from "../adapters/companion.js";
+import { companionButtons, companionInfo, companionPressBank, companionPressLocation } from "../adapters/companion.js";
 import { clearLayer, nextSlide, previousSlide, triggerPlaylistItem } from "../adapters/propresenter.js";
 import { writeAudit } from "../core/audit.js";
 import { parseCommand } from "../core/command-parser.js";
@@ -128,10 +128,16 @@ const actionSchema = z.discriminatedUnion("action", [
   }),
   z.object({
     action: z.literal("companion.button.press"),
-    payload: z.object({
-      page: z.number().int().min(1),
-      bank: z.number().int().min(1)
-    }),
+    payload: z
+      .object({
+        page: z.number().int().min(1),
+        bank: z.number().int().min(1).optional(),
+        row: z.number().int().min(0).max(3).optional(),
+        column: z.number().int().min(0).max(7).optional()
+      })
+      .refine((v) => (v.bank !== undefined ? true : v.row !== undefined && v.column !== undefined), {
+        message: "Provide bank OR row+column"
+      }),
     requestId: z.string().optional(),
     source: z.string().optional()
   }),
@@ -226,14 +232,25 @@ actionRouter.post("/action", async (req, res) => {
       }
       case "companion.button.press": {
         const data = env.dryRun
-          ? { page: body.payload.page, bank: body.payload.bank, simulated: true }
-          : await companionPress(body.payload.page, body.payload.bank);
+          ? {
+              page: body.payload.page,
+              ...(body.payload.bank !== undefined
+                ? { bank: body.payload.bank }
+                : { row: body.payload.row, column: body.payload.column }),
+              simulated: true
+            }
+          : body.payload.bank !== undefined
+            ? await companionPressBank(body.payload.page, body.payload.bank)
+            : await companionPressLocation(body.payload.page, body.payload.row!, body.payload.column!);
         result = {
           ok: true,
           action: body.action,
           dryRun: env.dryRun,
           requestId: body.requestId,
-          message: `Companion button pressed p${body.payload.page} b${body.payload.bank}`,
+          message:
+            body.payload.bank !== undefined
+              ? `Companion button pressed p${body.payload.page} b${body.payload.bank}`
+              : `Companion button pressed p${body.payload.page} r${body.payload.row} c${body.payload.column}`,
           data,
           timestamp: ts
         };

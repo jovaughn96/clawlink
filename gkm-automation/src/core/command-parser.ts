@@ -76,6 +76,23 @@ export function parseCommand(command: string): ParsedCommand {
     };
   }
 
+  const companionLocationMatch = normalized.match(/^companion press location (\d+) (\d+) (\d+)$/);
+  if (companionLocationMatch) {
+    return {
+      normalized,
+      actionRequests: [
+        {
+          action: "companion.button.press",
+          payload: {
+            page: Number(companionLocationMatch[1]),
+            row: Number(companionLocationMatch[2]),
+            column: Number(companionLocationMatch[3])
+          }
+        }
+      ]
+    };
+  }
+
   const ppNext = normalized.match(/^next slide(?: on ([a-z0-9\- ]+))?$/);
   if (ppNext) {
     return {
