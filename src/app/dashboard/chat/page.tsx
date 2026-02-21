@@ -6,6 +6,7 @@ import { ChatInput } from "@/components/chat-input";
 import { useSession } from "@/components/session-context";
 
 const CHAT_USER_STORAGE_KEY = "clawlink:chat:user";
+const POLL_INTERVAL_MS = 5000;
 
 function getOrCreateChatUser(): string {
   const existing = window.localStorage.getItem(CHAT_USER_STORAGE_KEY);
@@ -18,6 +19,27 @@ function getOrCreateChatUser(): string {
   return created;
 }
 
+interface RawMessage {
+  role: string;
+  content: string;
+  tools?: { action: string; result: string }[];
+}
+
+function mapApiMessages(data: RawMessage[]): Message[] {
+  return data
+    .filter(
+      (m) =>
+        m.role === "user" ||
+        m.role === "assistant" ||
+        m.role === "tool_group"
+    )
+    .map((m) => ({
+      role: m.role as "user" | "assistant" | "tool_group",
+      content: m.content,
+      ...(m.tools ? { tools: m.tools } : {}),
+    }));
+}
+
 export default function ChatPage() {
   const { activeSessionKey } = useSession();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -26,71 +48,97 @@ export default function ChatPage() {
   const [loadingSession, setLoadingSession] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const prevSessionRef = useRef<string | null>(null);
+  const streamingRef = useRef(false);
+
+  // Keep streamingRef in sync so the poll interval can check it
+  useEffect(() => {
+    streamingRef.current = streaming;
+  }, [streaming]);
 
   // Initialize chat user
   useEffect(() => {
     setChatUser(getOrCreateChatUser());
   }, []);
 
-  // Load transcript when activeSessionKey changes
+  // Fetch transcript for a given session key
+  const fetchTranscript = useCallback(
+    async (key: string, signal?: AbortSignal): Promise<Message[] | null> => {
+      try {
+        const res = await fetch(
+          `/api/sessions/${encodeURIComponent(key)}`,
+          signal ? { signal } : undefined
+        );
+        if (!res.ok) return null;
+        const data = await res.json();
+        if (!Array.isArray(data)) return null;
+        return mapApiMessages(data);
+      } catch {
+        return null;
+      }
+    },
+    []
+  );
+
+  // Load transcript on session change + set up polling
   useEffect(() => {
+    // Initial load when session changes
     if (activeSessionKey === prevSessionRef.current) return;
     prevSessionRef.current = activeSessionKey;
 
     if (activeSessionKey === null) {
-      // New chat — clear messages
       setMessages([]);
       return;
     }
 
-    // Load session transcript
     let cancelled = false;
+    const controller = new AbortController();
     setLoadingSession(true);
 
-    fetch(`/api/sessions/${encodeURIComponent(activeSessionKey)}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (cancelled) return;
-        if (Array.isArray(data)) {
-          const mapped: Message[] = data
-            .filter(
-              (m: { role: string }) =>
-                m.role === "user" ||
-                m.role === "assistant" ||
-                m.role === "tool_group"
-            )
-            .map(
-              (m: {
-                role: string;
-                content: string;
-                tools?: { action: string; result: string }[];
-              }) => ({
-                role: m.role as "user" | "assistant" | "tool_group",
-                content: m.content,
-                ...(m.tools ? { tools: m.tools } : {}),
-              })
-            );
-          setMessages(mapped);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setMessages([
-            {
-              role: "assistant",
-              content: "Error: Failed to load session transcript.",
-            },
-          ]);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingSession(false);
-      });
+    fetchTranscript(activeSessionKey, controller.signal).then((result) => {
+      if (cancelled) return;
+      if (result) {
+        setMessages(result);
+      } else {
+        setMessages([
+          {
+            role: "assistant",
+            content: "Error: Failed to load session transcript.",
+          },
+        ]);
+      }
+      setLoadingSession(false);
+    });
 
     return () => {
       cancelled = true;
+      controller.abort();
     };
-  }, [activeSessionKey]);
+  }, [activeSessionKey, fetchTranscript]);
+
+  // Poll for updates while a session is active
+  useEffect(() => {
+    if (!activeSessionKey) return;
+
+    const interval = setInterval(async () => {
+      // Don't poll while we're streaming a response locally
+      if (streamingRef.current) return;
+
+      const result = await fetchTranscript(activeSessionKey);
+      if (result && result.length > 0) {
+        setMessages((prev) => {
+          // Only update if the message count changed (avoids flicker)
+          if (result.length !== prev.length) return result;
+          // Also check if the last message content differs
+          const lastNew = result[result.length - 1];
+          const lastOld = prev[prev.length - 1];
+          if (lastNew?.content !== lastOld?.content) return result;
+          return prev;
+        });
+      }
+    }, POLL_INTERVAL_MS);
+
+    return () => clearInterval(interval);
+  }, [activeSessionKey, fetchTranscript]);
 
   const handleSend = useCallback(
     async (text: string) => {
