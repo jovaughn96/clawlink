@@ -71,18 +71,22 @@ class FirestoreWatcher {
     await this._setTyping(conversationId, true);
 
     try {
+      const relayText = this._buildRelayText(data);
+
       // Send to OpenClaw — streaming deltas are handled by the client
-      const responseText = await this.client.sendMessage(data.text, conversationId);
+      const responseText = await this.client.sendMessage(relayText, conversationId);
 
       // Clear typing indicator
       await this._setTyping(conversationId, false);
 
-      // Write Eden's response as a new message
+      // Write Eden's response as a new message (text or image)
       const edenMsgRef = msgRef.parent.doc();
+      const imagePayload = this._extractImagePayload(responseText);
       await edenMsgRef.set({
         sender: "eden",
-        type: "text",
-        text: responseText,
+        type: imagePayload ? "image" : "text",
+        text: imagePayload ? imagePayload.text : responseText,
+        ...(imagePayload ? { imageUrl: imagePayload.url } : {}),
         status: "delivered",
         bridgeStatus: "responded",
         createdAt: FieldValue.serverTimestamp(),
@@ -113,6 +117,39 @@ class FirestoreWatcher {
   /**
    * Listen for streaming deltas to update typing/partial response.
    */
+  _buildRelayText(data) {
+    const type = data?.type || "text";
+
+    if (type === "image") {
+      const parts = ["User sent an image."];
+      if (data.imageUrl) parts.push(`Image URL: ${data.imageUrl}`);
+      if (data.text) parts.push(`Caption: ${data.text}`);
+      return parts.join("\n");
+    }
+
+    return data?.text || "";
+  }
+
+  _extractImagePayload(text) {
+    if (!text || typeof text !== "string") return null;
+
+    // Markdown image: ![alt](url)
+    const md = text.match(/!\[[^\]]*\]\((https?:\/\/[^\s)]+)\)/i);
+    if (md?.[1]) {
+      const cleaned = text.replace(md[0], "").trim();
+      return { url: md[1], text: cleaned || "Image" };
+    }
+
+    // Plain URL ending in common image extension
+    const url = text.match(/(https?:\/\/[^\s]+\.(?:png|jpe?g|gif|webp))/i);
+    if (url?.[1]) {
+      const cleaned = text.replace(url[1], "").trim();
+      return { url: url[1], text: cleaned || "Image" };
+    }
+
+    return null;
+  }
+
   _setupClientListeners() {
     this.client.on("delta", async ({ conversationId, delta, accumulated }) => {
       // Update presence with partial text for real-time display
