@@ -93,10 +93,11 @@ export async function nextSlide(target?: string): Promise<{ ok: true; target: st
   try {
     const hit = await callWithFallback(
       [
+        { method: "GET", path: "/v1/presentation/active/next/trigger" },
+        { method: "GET", path: "/v1/presentation/focused/next/trigger" },
+        { method: "GET", path: "/v1/presentation/next/trigger" },
         { method: "POST", path: "/v1/presentation/next" },
-        { method: "GET", path: "/v1/presentation/next" },
-        { method: "POST", path: "/v1/presentation/active/next" },
-        { method: "GET", path: "/v1/presentation/active/next" }
+        { method: "GET", path: "/v1/presentation/next" }
       ],
       target
     );
@@ -115,10 +116,11 @@ export async function previousSlide(target?: string): Promise<{ ok: true; target
   try {
     const hit = await callWithFallback(
       [
+        { method: "GET", path: "/v1/presentation/active/previous/trigger" },
+        { method: "GET", path: "/v1/presentation/focused/previous/trigger" },
+        { method: "GET", path: "/v1/presentation/previous/trigger" },
         { method: "POST", path: "/v1/presentation/previous" },
-        { method: "GET", path: "/v1/presentation/previous" },
-        { method: "POST", path: "/v1/presentation/active/previous" },
-        { method: "GET", path: "/v1/presentation/active/previous" }
+        { method: "GET", path: "/v1/presentation/previous" }
       ],
       target
     );
@@ -137,17 +139,42 @@ export async function clearLayer(
 ): Promise<{ targetLayer: string; target: string; mode: string }> {
   const inst = resolveProPresenterTarget(target);
 
-  const pathByTarget: Record<string, string[]> = {
-    all: ["/v1/clear/all", "/v1/clear"],
-    slides: ["/v1/clear/slide", "/v1/clear/slides"],
-    media: ["/v1/clear/media"],
-    audio: ["/v1/clear/audio"]
+  const directByLayer: Record<string, string[]> = {
+    all: [],
+    slides: ["/v1/clear/layer/slide", "/v1/clear/slide", "/v1/clear/slides"],
+    media: ["/v1/clear/layer/media", "/v1/clear/media"],
+    audio: ["/v1/clear/layer/audio", "/v1/clear/audio"]
   };
 
   try {
-    const candidates = pathByTarget[targetLayer].flatMap((path) => [
-      { method: "POST" as const, path },
-      { method: "GET" as const, path }
+    if (targetLayer === "all") {
+      const layerPaths = [
+        "/v1/clear/layer/props",
+        "/v1/clear/layer/messages",
+        "/v1/clear/layer/announcements",
+        "/v1/clear/layer/video_input",
+        "/v1/clear/layer/media",
+        "/v1/clear/layer/slide",
+        "/v1/clear/layer/audio"
+      ];
+
+      const used: string[] = [];
+      for (const path of layerPaths) {
+        const hit = await callWithFallback(
+          [
+            { method: "GET" as const, path },
+            { method: "POST" as const, path }
+          ],
+          target
+        );
+        used.push(`${hit.method} ${hit.path}`);
+      }
+      return { targetLayer, target: inst.name, mode: used.join(", ") };
+    }
+
+    const candidates = directByLayer[targetLayer].flatMap((path) => [
+      { method: "GET" as const, path },
+      { method: "POST" as const, path }
     ]);
 
     const hit = await callWithFallback(candidates, target);
