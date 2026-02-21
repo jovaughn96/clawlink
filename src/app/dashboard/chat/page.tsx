@@ -3,8 +3,8 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { ChatMessages, Message } from "@/components/chat-messages";
 import { ChatInput } from "@/components/chat-input";
+import { useSession } from "@/components/session-context";
 
-const CHAT_MESSAGES_STORAGE_KEY = "clawlink:chat:messages";
 const CHAT_USER_STORAGE_KEY = "clawlink:chat:user";
 
 function getOrCreateChatUser(): string {
@@ -19,36 +19,78 @@ function getOrCreateChatUser(): string {
 }
 
 export default function ChatPage() {
+  const { activeSessionKey } = useSession();
   const [messages, setMessages] = useState<Message[]>([]);
   const [streaming, setStreaming] = useState(false);
   const [chatUser, setChatUser] = useState<string | null>(null);
+  const [loadingSession, setLoadingSession] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  const prevSessionRef = useRef<string | null>(null);
 
+  // Initialize chat user
   useEffect(() => {
-    const storedMessages = window.localStorage.getItem(CHAT_MESSAGES_STORAGE_KEY);
-    if (storedMessages) {
-      try {
-        const parsed = JSON.parse(storedMessages);
-        if (Array.isArray(parsed)) {
-          const sanitized = parsed.filter(
-            (msg): msg is Message =>
-              msg &&
-              (msg.role === "user" || msg.role === "assistant") &&
-              typeof msg.content === "string"
-          );
-          setMessages(sanitized);
-        }
-      } catch {
-        // Ignore malformed localStorage data.
-      }
-    }
-
     setChatUser(getOrCreateChatUser());
   }, []);
 
+  // Load transcript when activeSessionKey changes
   useEffect(() => {
-    window.localStorage.setItem(CHAT_MESSAGES_STORAGE_KEY, JSON.stringify(messages));
-  }, [messages]);
+    if (activeSessionKey === prevSessionRef.current) return;
+    prevSessionRef.current = activeSessionKey;
+
+    if (activeSessionKey === null) {
+      // New chat — clear messages
+      setMessages([]);
+      return;
+    }
+
+    // Load session transcript
+    let cancelled = false;
+    setLoadingSession(true);
+
+    fetch(`/api/sessions/${encodeURIComponent(activeSessionKey)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (cancelled) return;
+        if (Array.isArray(data)) {
+          const mapped: Message[] = data
+            .filter(
+              (m: { role: string }) =>
+                m.role === "user" ||
+                m.role === "assistant" ||
+                m.role === "tool_group"
+            )
+            .map(
+              (m: {
+                role: string;
+                content: string;
+                tools?: { action: string; result: string }[];
+              }) => ({
+                role: m.role as "user" | "assistant" | "tool_group",
+                content: m.content,
+                ...(m.tools ? { tools: m.tools } : {}),
+              })
+            );
+          setMessages(mapped);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setMessages([
+            {
+              role: "assistant",
+              content: "Error: Failed to load session transcript.",
+            },
+          ]);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingSession(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeSessionKey]);
 
   const handleSend = useCallback(
     async (text: string) => {
@@ -66,11 +108,14 @@ export default function ChatPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            messages: updated.map((m) => ({
-              role: m.role,
-              content: m.content,
-            })),
+            messages: updated
+              .filter((m) => m.role === "user" || m.role === "assistant")
+              .map((m) => ({
+                role: m.role,
+                content: m.content,
+              })),
             user: chatUser,
+            sessionKey: activeSessionKey,
           }),
           signal: abortRef.current.signal,
         });
@@ -157,13 +202,24 @@ export default function ChatPage() {
         abortRef.current = null;
       }
     },
-    [messages, chatUser]
+    [messages, chatUser, activeSessionKey]
   );
 
   return (
     <div className="flex h-full flex-col">
-      <ChatMessages messages={messages} />
-      <ChatInput onSend={handleSend} disabled={streaming || !chatUser} />
+      {loadingSession ? (
+        <div className="flex flex-1 items-center justify-center">
+          <span className="font-mono text-sm text-muted-foreground">
+            {"// loading session..."}
+          </span>
+        </div>
+      ) : (
+        <ChatMessages messages={messages} streaming={streaming} />
+      )}
+      <ChatInput
+        onSend={handleSend}
+        disabled={streaming || !chatUser || loadingSession}
+      />
     </div>
   );
 }

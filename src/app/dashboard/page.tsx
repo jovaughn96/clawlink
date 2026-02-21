@@ -1,6 +1,7 @@
 "use client";
 
 import useSWR from "swr";
+import { Activity, Monitor, Clock, Bot } from "lucide-react";
 import { StatCard, StatsGrid } from "@/components/stats-cards";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -21,11 +22,15 @@ export default function DashboardPage() {
   });
 
   return (
-    <div className="flex flex-col gap-6 p-4">
-      <h1 className="text-lg font-semibold">Overview</h1>
+    <div className="flex flex-col gap-6 p-4 sm:p-6">
+      <h1 className="font-display text-2xl font-bold tracking-tight">
+        Overview
+      </h1>
 
       {isLoading && (
-        <p className="text-muted-foreground">Loading stats...</p>
+        <p className="font-mono text-sm text-muted-foreground">
+          {"// loading stats..."}
+        </p>
       )}
 
       {stats && !stats.error && (
@@ -33,24 +38,28 @@ export default function DashboardPage() {
           <StatCard
             title="Sessions"
             value={stats.activeSessions ?? 0}
+            icon={Activity}
           />
           <StatCard
             title="Connected Devices"
             value={stats.connectedDevices ?? 0}
+            icon={Monitor}
           />
           <StatCard
             title="Uptime"
             value={stats.uptime ? formatUptime(stats.uptime) : "N/A"}
+            icon={Clock}
           />
           <StatCard
             title="Default Agent"
             value={stats.defaultAgent ?? "N/A"}
+            icon={Bot}
           />
         </StatsGrid>
       )}
 
       {stats?.error && (
-        <p className="text-destructive">
+        <p className="font-mono text-sm text-destructive">
           Failed to load stats: {stats.error}
         </p>
       )}

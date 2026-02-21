@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { SendHorizonal } from "lucide-react";
 
 interface ChatInputProps {
   onSend: (message: string) => void;
@@ -21,16 +21,29 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex gap-2 border-t p-4">
-      <Input
+    <form
+      onSubmit={handleSubmit}
+      className="flex items-center gap-2 border-t border-border p-3 sm:p-4"
+      style={{ paddingBottom: `max(0.75rem, env(safe-area-inset-bottom))` }}
+    >
+      <span className="select-none font-mono text-base font-bold text-primary">
+        {">"}
+      </span>
+      <input
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        placeholder="Type a message..."
+        placeholder="type a message..."
         disabled={disabled}
         autoFocus
+        className="flex-1 bg-transparent font-mono text-base text-foreground placeholder:text-muted-foreground outline-none disabled:opacity-50"
       />
-      <Button type="submit" disabled={disabled || !value.trim()}>
-        Send
+      <Button
+        type="submit"
+        size="icon"
+        disabled={disabled || !value.trim()}
+        className="size-11 shrink-0"
+      >
+        <SendHorizonal className="size-5" />
       </Button>
     </form>
   );

@@ -4,9 +4,9 @@ import { chatCompletion } from "@/lib/gateway-http";
 export const maxDuration = 300;
 
 export async function POST(req: NextRequest) {
-  const { messages, agentId, user } = await req.json();
+  const { messages, agentId, user, sessionKey } = await req.json();
 
-  const upstream = await chatCompletion(messages, agentId, user);
+  const upstream = await chatCompletion(messages, agentId, user, sessionKey);
 
   if (!upstream.ok) {
     const text = await upstream.text();

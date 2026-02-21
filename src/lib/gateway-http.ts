@@ -11,7 +11,8 @@ export interface ChatMessage {
 export async function chatCompletion(
   messages: ChatMessage[],
   agentId?: string,
-  user?: string
+  user?: string,
+  sessionKey?: string
 ): Promise<Response> {
   const body: Record<string, unknown> = {
     model: "openclaw",
@@ -23,6 +24,9 @@ export async function chatCompletion(
   }
   if (user) {
     body.user = user;
+  }
+  if (sessionKey) {
+    body.session_key = sessionKey;
   }
 
   return fetch(`${GATEWAY_URL}/v1/chat/completions`, {
