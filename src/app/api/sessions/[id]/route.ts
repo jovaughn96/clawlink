@@ -7,7 +7,8 @@ export async function GET(
 ) {
   const { id } = await params;
   try {
-    const result = await rpcCall("sessions.history", { sessionId: id });
+    // Try sessions.preview first (may work without elevated scope)
+    const result = await rpcCall("sessions.preview", { sessionKey: id });
     return NextResponse.json(result);
   } catch (err) {
     return NextResponse.json(

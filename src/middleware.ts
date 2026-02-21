@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyToken, COOKIE_NAME } from "@/lib/auth";
 
 export async function middleware(req: NextRequest) {
+  // Skip auth endpoints
+  if (req.nextUrl.pathname.startsWith("/api/auth")) {
+    return NextResponse.next();
+  }
+
   const token = req.cookies.get(COOKIE_NAME)?.value;
 
   if (!token) {
@@ -24,5 +29,5 @@ function redirectToLogin(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/api/chat/:path*", "/api/sessions/:path*", "/api/stats/:path*"],
+  matcher: ["/dashboard/:path*", "/api/:path*"],
 };

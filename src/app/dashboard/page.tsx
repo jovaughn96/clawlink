@@ -5,6 +5,16 @@ import { StatCard, StatsGrid } from "@/components/stats-cards";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
+function formatUptime(ms: number): string {
+  const hours = Math.floor(ms / 3600000);
+  const minutes = Math.floor((ms % 3600000) / 60000);
+  if (hours > 24) {
+    const days = Math.floor(hours / 24);
+    return `${days}d ${hours % 24}h`;
+  }
+  return `${hours}h ${minutes}m`;
+}
+
 export default function DashboardPage() {
   const { data: stats, isLoading } = useSWR("/api/stats", fetcher, {
     refreshInterval: 15000,
@@ -21,24 +31,20 @@ export default function DashboardPage() {
       {stats && !stats.error && (
         <StatsGrid>
           <StatCard
-            title="Active Sessions"
-            value={stats.sessions?.active ?? stats.activeSessions ?? 0}
+            title="Sessions"
+            value={stats.activeSessions ?? 0}
           />
           <StatCard
             title="Connected Devices"
-            value={stats.clients?.length ?? stats.connectedDevices ?? 0}
+            value={stats.connectedDevices ?? 0}
           />
           <StatCard
-            title="Tokens In"
-            value={
-              (stats.tokens?.in ?? stats.tokensIn ?? 0).toLocaleString()
-            }
+            title="Uptime"
+            value={stats.uptime ? formatUptime(stats.uptime) : "N/A"}
           />
           <StatCard
-            title="Tokens Out"
-            value={
-              (stats.tokens?.out ?? stats.tokensOut ?? 0).toLocaleString()
-            }
+            title="Default Agent"
+            value={stats.defaultAgent ?? "N/A"}
           />
         </StatsGrid>
       )}

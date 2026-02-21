@@ -4,12 +4,112 @@ import { env } from "@/lib/env";
 const GATEWAY_URL = env.OPENCLAW_GATEWAY_URL;
 const GATEWAY_TOKEN = env.OPENCLAW_GATEWAY_TOKEN;
 
-interface RpcResponse {
-  id: string;
-  result?: unknown;
-  error?: { code: number; message: string };
+const PROTOCOL_VERSION = 3;
+
+interface GatewayFrame {
+  type: "req" | "res" | "event";
+  id?: string;
+  method?: string;
+  event?: string;
+  ok?: boolean;
+  payload?: unknown;
+  error?: { code: string; message: string };
+  params?: unknown;
 }
 
+interface HelloOkPayload {
+  type: "hello-ok";
+  protocol: number;
+  snapshot?: {
+    presence?: unknown[];
+    health?: {
+      sessions?: { count?: number; recent?: unknown[] };
+      agents?: { agentId: string; sessions?: { count?: number; recent?: unknown[] } }[];
+      [key: string]: unknown;
+    };
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
+/**
+ * Connect to the gateway, authenticate with password, and return the
+ * hello-ok payload (which contains snapshot data for presence, health, sessions).
+ */
+export async function gatewayConnect(): Promise<HelloOkPayload> {
+  const wsUrl = GATEWAY_URL.replace(/^https/, "wss").replace(/^http/, "ws");
+
+  return new Promise((resolve, reject) => {
+    const ws = new WebSocket(wsUrl);
+    const timeout = setTimeout(() => {
+      ws.close();
+      reject(new Error("Gateway connect timeout"));
+    }, 15000);
+
+    ws.on("open", () => {
+      // Wait for challenge event before sending connect
+    });
+
+    ws.on("message", (data: WebSocket.Data) => {
+      const msg: GatewayFrame = JSON.parse(data.toString());
+
+      // Handle challenge event → send connect request
+      if (msg.type === "event" && msg.event === "connect.challenge") {
+        ws.send(
+          JSON.stringify({
+            type: "req",
+            id: "connect-1",
+            method: "connect",
+            params: {
+              minProtocol: PROTOCOL_VERSION,
+              maxProtocol: PROTOCOL_VERSION,
+              client: {
+                id: "gateway-client",
+                version: "1.0.0",
+                platform: "web",
+                mode: "cli",
+              },
+              caps: [],
+              auth: { password: GATEWAY_TOKEN },
+              role: "operator",
+              scopes: ["operator.admin", "operator.read"],
+            },
+          })
+        );
+        return;
+      }
+
+      // Handle connect response
+      if (msg.type === "res" && msg.id === "connect-1") {
+        clearTimeout(timeout);
+        ws.close();
+        if (!msg.ok) {
+          reject(
+            new Error(
+              `Gateway connect failed: ${msg.error?.message ?? "unknown error"}`
+            )
+          );
+          return;
+        }
+        resolve(msg.payload as HelloOkPayload);
+        return;
+      }
+    });
+
+    ws.on("error", (err) => {
+      clearTimeout(timeout);
+      reject(err);
+    });
+
+    ws.on("close", () => {
+      clearTimeout(timeout);
+    });
+  });
+}
+
+/**
+ * Connect, authenticate, send a single RPC request, and return the result.
+ */
 export async function rpcCall(
   method: string,
   params: Record<string, unknown> = {}
@@ -25,77 +125,65 @@ export async function rpcCall(
 
     let authenticated = false;
 
-    ws.on("open", () => {
-      // Send connect handshake
-      ws.send(
-        JSON.stringify({
-          jsonrpc: "2.0",
-          method: "connect",
-          params: {
-            password: GATEWAY_TOKEN,
-            role: "operator",
-            client: "clawlink-web",
-          },
-          id: "auth-1",
-        })
-      );
-    });
-
     ws.on("message", (data: WebSocket.Data) => {
-      const msg = JSON.parse(data.toString());
+      const msg: GatewayFrame = JSON.parse(data.toString());
 
-      // Handle challenge-based auth
-      if (msg.method === "challenge") {
+      // Handle challenge → send connect
+      if (msg.type === "event" && msg.event === "connect.challenge") {
         ws.send(
           JSON.stringify({
-            jsonrpc: "2.0",
-            method: "authenticate",
+            type: "req",
+            id: "connect-1",
+            method: "connect",
             params: {
-              password: GATEWAY_TOKEN,
+              minProtocol: PROTOCOL_VERSION,
+              maxProtocol: PROTOCOL_VERSION,
+              client: {
+                id: "gateway-client",
+                version: "1.0.0",
+                platform: "web",
+                mode: "cli",
+              },
+              caps: [],
+              auth: { password: GATEWAY_TOKEN },
+              role: "operator",
+              scopes: ["operator.admin", "operator.read"],
             },
-            id: "auth-2",
           })
         );
         return;
       }
 
-      // Handle hello/connect ack
-      if (msg.id === "auth-1" || msg.id === "auth-2") {
-        if (msg.error) {
+      // Handle connect response → send RPC
+      if (msg.type === "res" && msg.id === "connect-1") {
+        if (!msg.ok) {
           clearTimeout(timeout);
           ws.close();
-          reject(new Error(`Auth failed: ${msg.error.message}`));
+          reject(new Error(`Auth failed: ${msg.error?.message}`));
           return;
         }
         authenticated = true;
-        // Now send the actual RPC request
         ws.send(
           JSON.stringify({
-            jsonrpc: "2.0",
+            type: "req",
+            id: "rpc-1",
             method,
             params,
-            id: "rpc-1",
           })
         );
         return;
       }
 
       // Handle RPC response
-      if (msg.id === "rpc-1") {
+      if (msg.type === "res" && msg.id === "rpc-1") {
         clearTimeout(timeout);
         ws.close();
-        const rpcMsg = msg as RpcResponse;
-        if (rpcMsg.error) {
-          reject(new Error(rpcMsg.error.message));
+        if (!msg.ok) {
+          reject(new Error(msg.error?.message ?? "RPC error"));
         } else {
-          resolve(rpcMsg.result);
+          resolve(msg.payload);
         }
         return;
-      }
-
-      // Ignore notifications / other messages
-      if (!authenticated && !msg.id) {
-        // Server might send a welcome message, ignore
       }
     });
 
@@ -106,6 +194,9 @@ export async function rpcCall(
 
     ws.on("close", () => {
       clearTimeout(timeout);
+      if (!authenticated) {
+        reject(new Error("Connection closed before auth"));
+      }
     });
   });
 }
