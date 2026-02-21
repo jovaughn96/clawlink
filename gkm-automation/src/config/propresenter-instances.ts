@@ -6,6 +6,15 @@ export type ProPresenterInstance = {
   password?: string;
   roles: string[];
   primary?: boolean;
+  // Optional macro fallback IDs for installations where direct HTTP control paths vary by version.
+  macroFallbacks?: {
+    next?: string;
+    previous?: string;
+    clearAll?: string;
+    clearSlides?: string;
+    clearMedia?: string;
+    clearAudio?: string;
+  };
 };
 
 export const propresenterInstances: ProPresenterInstance[] = [
