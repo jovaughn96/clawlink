@@ -25,8 +25,9 @@ export const env = {
     .filter(Boolean),
   atemIp: process.env.ATEM_IP ?? "172.16.0.50",
   atemMock: toBool(process.env.ATEM_MOCK, true),
-  propresenterHost: process.env.PROPRESENTER_HOST ?? "127.0.0.1",
-  propresenterPort: Number(process.env.PROPRESENTER_PORT ?? 1025),
+  propresenterName: process.env.PROPRESENTER_NAME ?? "Pro7 - PC",
+  propresenterHost: process.env.PROPRESENTER_HOST ?? "172.16.14.223",
+  propresenterPort: Number(process.env.PROPRESENTER_PORT ?? 64910),
   propresenterPass: process.env.PROPRESENTER_PASSWORD,
   sqlitePath: process.env.SQLITE_PATH ?? "./data/audit.db"
 };

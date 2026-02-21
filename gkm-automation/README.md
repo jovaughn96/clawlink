@@ -92,7 +92,8 @@ launchctl list | grep ai.gkm.automation
 ## ProPresenter wiring notes
 
 - Ensure ProPresenter API is enabled.
-- Set `PROPRESENTER_HOST`, `PROPRESENTER_PORT`, and optional `PROPRESENTER_PASSWORD`.
+- Main configured instance (primary): `Pro7 - PC` at `172.16.14.223:64910`.
+- Set `PROPRESENTER_NAME`, `PROPRESENTER_HOST`, `PROPRESENTER_PORT`, and `PROPRESENTER_PASSWORD` in `.env`.
 - `propresenter.trigger` expects playlist + item identifiers (stable IDs from API output).
 
 ## Church profile encoded

@@ -195,6 +195,7 @@ actionRouter.post("/action", async (req, res) => {
           data: {
             atem: { ip: env.atemIp, mock: env.atemMock },
             propresenter: {
+              name: env.propresenterName,
               host: env.propresenterHost,
               port: env.propresenterPort,
               configuredAuth: Boolean(env.propresenterPass)
