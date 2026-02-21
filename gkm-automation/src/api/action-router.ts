@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { z } from "zod";
 import { env } from "../config/env.js";
-import { runMacro, setProgramInput } from "../adapters/atem.js";
+import { keyLayers, meAliases, scenePresets, inputAliases } from "../config/profile.js";
+import { runMacro, setProgramInput, setProgramInputForMe } from "../adapters/atem.js";
 import { clearLayer, nextSlide, previousSlide, triggerPlaylistItem } from "../adapters/propresenter.js";
 import { writeAudit } from "../core/audit.js";
 import type { ActionName, ActionResult } from "../types/actions.js";
@@ -10,6 +11,24 @@ const actionSchema = z.discriminatedUnion("action", [
   z.object({
     action: z.literal("atem.program.set"),
     payload: z.object({ input: z.number().int().min(1).max(20) }),
+    requestId: z.string().optional(),
+    source: z.string().optional()
+  }),
+  z.object({
+    action: z.literal("atem.me.program.set"),
+    payload: z.object({
+      input: z.number().int().min(1).max(20),
+      me: z.union([z.literal(1), z.literal(2)])
+    }),
+    requestId: z.string().optional(),
+    source: z.string().optional()
+  }),
+  z.object({
+    action: z.literal("atem.scene.take"),
+    payload: z.object({
+      scene: z.string().min(1),
+      me: z.union([z.literal(1), z.literal(2)]).optional()
+    }),
     requestId: z.string().optional(),
     source: z.string().optional()
   }),
@@ -49,6 +68,12 @@ const actionSchema = z.discriminatedUnion("action", [
     source: z.string().optional()
   }),
   z.object({
+    action: z.literal("system.profile.get"),
+    payload: z.object({}).default({}),
+    requestId: z.string().optional(),
+    source: z.string().optional()
+  }),
+  z.object({
     action: z.literal("system.health"),
     payload: z.object({}).default({}),
     requestId: z.string().optional(),
@@ -60,6 +85,16 @@ function ensureAllowed(action: ActionName): void {
   if (!env.allowedActions.includes(action)) {
     throw new Error(`Action not allowed by policy: ${action}`);
   }
+}
+
+function resolveScene(scene: string): { input: number; me: 1 | 2; scene: string } {
+  const preset = scenePresets[scene as keyof typeof scenePresets];
+  if (!preset) {
+    throw new Error(`Unknown scene preset: ${scene}`);
+  }
+
+  const input = inputAliases[preset.input as keyof typeof inputAliases];
+  return { input, me: preset.defaultMe, scene };
 }
 
 export const actionRouter = Router();
@@ -85,6 +120,23 @@ actionRouter.post("/action", async (req, res) => {
     let result: ActionResult;
 
     switch (body.action) {
+      case "system.profile.get": {
+        result = {
+          ok: true,
+          action: body.action,
+          dryRun: env.dryRun,
+          requestId: body.requestId,
+          message: "Profile loaded",
+          data: {
+            inputs: inputAliases,
+            mes: meAliases,
+            keyLayers,
+            scenePresets
+          },
+          timestamp: ts
+        };
+        break;
+      }
       case "system.health": {
         result = {
           ok: true,
@@ -98,6 +150,10 @@ actionRouter.post("/action", async (req, res) => {
               host: env.propresenterHost,
               port: env.propresenterPort,
               configuredAuth: Boolean(env.propresenterPass)
+            },
+            profile: {
+              scenes: Object.keys(scenePresets).length,
+              inputs: Object.keys(inputAliases).length
             },
             dryRun: env.dryRun
           },
@@ -115,6 +171,49 @@ actionRouter.post("/action", async (req, res) => {
           dryRun: env.dryRun,
           requestId: body.requestId,
           message: `ATEM program set -> input ${body.payload.input}`,
+          data,
+          timestamp: ts
+        };
+        break;
+      }
+      case "atem.me.program.set": {
+        const data = env.dryRun
+          ? {
+              target: env.atemIp,
+              input: body.payload.input,
+              me: body.payload.me,
+              simulated: true
+            }
+          : await setProgramInputForMe(body.payload.input, body.payload.me);
+        result = {
+          ok: true,
+          action: body.action,
+          dryRun: env.dryRun,
+          requestId: body.requestId,
+          message: `ATEM ME${body.payload.me} program set -> input ${body.payload.input}`,
+          data,
+          timestamp: ts
+        };
+        break;
+      }
+      case "atem.scene.take": {
+        const resolved = resolveScene(body.payload.scene);
+        const me = body.payload.me ?? resolved.me;
+        const data = env.dryRun
+          ? {
+              target: env.atemIp,
+              scene: body.payload.scene,
+              input: resolved.input,
+              me,
+              simulated: true
+            }
+          : await setProgramInputForMe(resolved.input, me);
+        result = {
+          ok: true,
+          action: body.action,
+          dryRun: env.dryRun,
+          requestId: body.requestId,
+          message: `ATEM scene ${body.payload.scene} -> input ${resolved.input} on ME${me}`,
           data,
           timestamp: ts
         };

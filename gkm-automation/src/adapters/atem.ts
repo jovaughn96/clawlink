@@ -4,7 +4,7 @@ type AtemConnectionLike = {
   connect: (ip: string) => Promise<void>;
   disconnect: () => void;
   connected: boolean;
-  changeProgramInput: (input: number) => void;
+  changeProgramInput: (input: number, me?: number) => void;
   macro: {
     runMacro: (macroId: number) => void;
   };
@@ -27,13 +27,21 @@ async function getLiveConnection(): Promise<AtemConnectionLike> {
 }
 
 export async function setProgramInput(input: number): Promise<{ target: string; input: number }> {
+  const result = await setProgramInputForMe(input, 1);
+  return { target: result.target, input: result.input };
+}
+
+export async function setProgramInputForMe(
+  input: number,
+  me: 1 | 2
+): Promise<{ target: string; input: number; me: 1 | 2 }> {
   if (env.atemMock) {
-    return { target: env.atemIp, input };
+    return { target: env.atemIp, input, me };
   }
 
   const atem = await getLiveConnection();
-  atem.changeProgramInput(input);
-  return { target: env.atemIp, input };
+  atem.changeProgramInput(input, me - 1);
+  return { target: env.atemIp, input, me };
 }
 
 export async function runMacro(macroId: number): Promise<{ target: string; macroId: number }> {

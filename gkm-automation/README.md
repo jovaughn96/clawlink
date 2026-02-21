@@ -16,7 +16,9 @@ Local 24/7 automation bridge for production control at Global Kingdom Ministries
 ## Supported actions (current)
 
 - `system.health`
-- `atem.program.set` (input)
+- `atem.program.set` (input on ME1)
+- `atem.me.program.set` (input + me)
+- `atem.scene.take` (scene preset + optional me override)
 - `atem.macro.run` (macroId)
 - `propresenter.trigger` (playlistId + itemId)
 - `propresenter.next`
@@ -69,6 +71,21 @@ launchctl list | grep ai.gkm.automation
 - Ensure ProPresenter API is enabled.
 - Set `PROPRESENTER_HOST`, `PROPRESENTER_PORT`, and optional `PROPRESENTER_PASSWORD`.
 - `propresenter.trigger` expects playlist + item identifiers (stable IDs from API output).
+
+## Church profile encoded
+
+- Inputs: follow/wide/three-quarter/wireless/jib/drum/handheld/host(aux/laptop)
+- MEs: broadcast/live -> ME1, auditorium/lobby/atrium -> ME2
+- Key layer labels tracked: USK1 = ProPresenter, USK2 = GFXPC/TitleLive
+- Scene presets added:
+  - `sermon-follow`
+  - `sermon-wide`
+  - `sermon-close`
+  - `auditorium-wide`
+  - `auditorium-follow`
+  - `host-input`
+
+You can fetch this mapping through `system.profile.get`.
 
 ## Next steps
 
