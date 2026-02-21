@@ -11,7 +11,8 @@ import {
 } from "../adapters/atem.js";
 import { clearLayer, nextSlide, previousSlide, triggerPlaylistItem } from "../adapters/propresenter.js";
 import { writeAudit } from "../core/audit.js";
-import type { ActionName, ActionResult } from "../types/actions.js";
+import { parseCommand } from "../core/command-parser.js";
+import type { ActionName, ActionRequest, ActionResult } from "../types/actions.js";
 
 const actionSchema = z.discriminatedUnion("action", [
   z.object({
@@ -142,6 +143,12 @@ export const actionRouter = Router();
 
 actionRouter.get("/health", (_req, res) => {
   res.json({ ok: true, service: "gkm-automation", ts: new Date().toISOString() });
+});
+
+const commandSchema = z.object({
+  command: z.string().min(3),
+  requestId: z.string().optional(),
+  source: z.string().optional()
 });
 
 actionRouter.post("/action", async (req, res) => {
@@ -446,5 +453,53 @@ actionRouter.post("/action", async (req, res) => {
     });
 
     res.status(500).json({ ok: false, error: "action_failed", message, timestamp: ts });
+  }
+});
+
+actionRouter.post("/command", async (req, res) => {
+  const parsed = commandSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ ok: false, error: "invalid_command", details: parsed.error.flatten() });
+    return;
+  }
+
+  try {
+    const commandResult = parseCommand(parsed.data.command);
+    const actionReq: ActionRequest = {
+      ...commandResult.actionRequest,
+      requestId: parsed.data.requestId,
+      source: parsed.data.source ?? "natural-command"
+    };
+
+    const actionResponse = await fetch(`http://${env.host}:${env.port}/api/action`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": env.apiKey
+      },
+      body: JSON.stringify(actionReq)
+    });
+
+    const result = await actionResponse.json();
+    if (!actionResponse.ok) {
+      res.status(actionResponse.status).json({
+        ok: false,
+        error: "command_action_failed",
+        parsedAction: actionReq,
+        result
+      });
+      return;
+    }
+
+    res.json({
+      ok: true,
+      command: parsed.data.command,
+      normalized: commandResult.normalized,
+      parsedAction: actionReq,
+      result
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    res.status(400).json({ ok: false, error: "command_parse_failed", message });
   }
 });

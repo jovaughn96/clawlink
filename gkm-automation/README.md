@@ -6,6 +6,7 @@ Local 24/7 automation bridge for production control at Global Kingdom Ministries
 
 - Secure local API with API-key auth (`x-api-key`)
 - Action endpoint: `POST /api/action`
+- Natural-language command endpoint: `POST /api/command`
 - Action allowlist policy via env (`ALLOWED_ACTIONS`)
 - Dry-run mode (`DRY_RUN=true` by default)
 - SQLite audit logging for every request/result
@@ -40,6 +41,20 @@ npm run gen:key
 # paste generated key into API_KEY in .env
 npm run build
 npm run start
+```
+
+## Command examples (natural language)
+
+```bash
+curl -s http://127.0.0.1:17816/api/command \
+  -H "content-type: application/json" \
+  -H "x-api-key: <API_KEY>" \
+  -d '{"command":"take sermon-wide to broadcast with propresenter on, gfx off"}'
+
+curl -s http://127.0.0.1:17816/api/command \
+  -H "content-type: application/json" \
+  -H "x-api-key: <API_KEY>" \
+  -d '{"command":"mirror broadcast to auditorium"}'
 ```
 
 ## Test calls (when you're ready)
