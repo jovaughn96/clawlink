@@ -63,6 +63,19 @@ export function parseCommand(command: string): ParsedCommand {
     };
   }
 
+  const companionPressMatch = normalized.match(/^companion press (\d+) (\d+)$/);
+  if (companionPressMatch) {
+    return {
+      normalized,
+      actionRequests: [
+        {
+          action: "companion.button.press",
+          payload: { page: Number(companionPressMatch[1]), bank: Number(companionPressMatch[2]) }
+        }
+      ]
+    };
+  }
+
   const ppNext = normalized.match(/^next slide(?: on ([a-z0-9\- ]+))?$/);
   if (ppNext) {
     return {

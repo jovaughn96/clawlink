@@ -3,6 +3,7 @@ import { z } from "zod";
 import { env } from "../config/env.js";
 import { keyLayers, meAliases, scenePresets, inputAliases } from "../config/profile.js";
 import { propresenterInstances } from "../config/propresenter-instances.js";
+import { companionConfig } from "../config/companion.js";
 import {
   getProgramInputForMe,
   runMacro,
@@ -10,6 +11,7 @@ import {
   setProgramInput,
   setProgramInputForMe
 } from "../adapters/atem.js";
+import { companionButtons, companionInfo, companionPress } from "../adapters/companion.js";
 import { clearLayer, nextSlide, previousSlide, triggerPlaylistItem } from "../adapters/propresenter.js";
 import { writeAudit } from "../core/audit.js";
 import { parseCommand } from "../core/command-parser.js";
@@ -113,6 +115,27 @@ const actionSchema = z.discriminatedUnion("action", [
     source: z.string().optional()
   }),
   z.object({
+    action: z.literal("companion.info"),
+    payload: z.object({}).default({}),
+    requestId: z.string().optional(),
+    source: z.string().optional()
+  }),
+  z.object({
+    action: z.literal("companion.buttons.list"),
+    payload: z.object({}).default({}),
+    requestId: z.string().optional(),
+    source: z.string().optional()
+  }),
+  z.object({
+    action: z.literal("companion.button.press"),
+    payload: z.object({
+      page: z.number().int().min(1),
+      bank: z.number().int().min(1)
+    }),
+    requestId: z.string().optional(),
+    source: z.string().optional()
+  }),
+  z.object({
     action: z.literal("system.profile.get"),
     payload: z.object({}).default({}),
     requestId: z.string().optional(),
@@ -171,6 +194,51 @@ actionRouter.post("/action", async (req, res) => {
     let result: ActionResult;
 
     switch (body.action) {
+      case "companion.info": {
+        const data = env.dryRun
+          ? { host: companionConfig.host, port: companionConfig.port, simulated: true }
+          : await companionInfo();
+        result = {
+          ok: true,
+          action: body.action,
+          dryRun: env.dryRun,
+          requestId: body.requestId,
+          message: "Companion info retrieved",
+          data,
+          timestamp: ts
+        };
+        break;
+      }
+      case "companion.buttons.list": {
+        const data = env.dryRun
+          ? { host: companionConfig.host, port: companionConfig.port, simulated: true }
+          : await companionButtons();
+        result = {
+          ok: true,
+          action: body.action,
+          dryRun: env.dryRun,
+          requestId: body.requestId,
+          message: "Companion buttons listed",
+          data,
+          timestamp: ts
+        };
+        break;
+      }
+      case "companion.button.press": {
+        const data = env.dryRun
+          ? { page: body.payload.page, bank: body.payload.bank, simulated: true }
+          : await companionPress(body.payload.page, body.payload.bank);
+        result = {
+          ok: true,
+          action: body.action,
+          dryRun: env.dryRun,
+          requestId: body.requestId,
+          message: `Companion button pressed p${body.payload.page} b${body.payload.bank}`,
+          data,
+          timestamp: ts
+        };
+        break;
+      }
       case "system.profile.get": {
         result = {
           ok: true,
@@ -210,6 +278,11 @@ actionRouter.post("/action", async (req, res) => {
                 roles: x.roles,
                 primary: Boolean(x.primary)
               }))
+            },
+            companion: {
+              host: companionConfig.host,
+              port: companionConfig.port,
+              configuredAuth: Boolean(companionConfig.token)
             },
             profile: {
               scenes: Object.keys(scenePresets).length,

@@ -7,6 +7,7 @@ Local 24/7 automation bridge for production control at Global Kingdom Ministries
 - Secure local API with API-key auth (`x-api-key`)
 - Action endpoint: `POST /api/action`
 - Natural-language command endpoint: `POST /api/command`
+- Companion support (info/buttons/press)
 - Action allowlist policy via env (`ALLOWED_ACTIONS`)
 - Dry-run mode (`DRY_RUN=true` by default)
 - SQLite audit logging for every request/result
@@ -60,6 +61,11 @@ curl -s http://127.0.0.1:17816/api/command \
   -H "content-type: application/json" \
   -H "x-api-key: <API_KEY>" \
   -d '{"command":"next slide on studio"}'
+
+curl -s http://127.0.0.1:17816/api/command \
+  -H "content-type: application/json" \
+  -H "x-api-key: <API_KEY>" \
+  -d '{"command":"companion press 1 3"}'
 
 # shorthand intents
 curl -s http://127.0.0.1:17816/api/command -H "content-type: application/json" -H "x-api-key: <API_KEY>" -d '{"command":"go live"}'

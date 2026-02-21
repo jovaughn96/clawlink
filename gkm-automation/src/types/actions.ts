@@ -10,6 +10,9 @@ export type ActionName =
   | "propresenter.next"
   | "propresenter.previous"
   | "propresenter.clear"
+  | "companion.info"
+  | "companion.buttons.list"
+  | "companion.button.press"
   | "system.health"
   | "system.profile.get";
 
@@ -37,6 +40,9 @@ export type ActionPayloadMap = {
   "propresenter.next": { target?: string };
   "propresenter.previous": { target?: string };
   "propresenter.clear": { target?: "all" | "slides" | "media" | "audio"; instance?: string };
+  "companion.info": Record<string, never>;
+  "companion.buttons.list": Record<string, never>;
+  "companion.button.press": { page: number; bank: number };
   "system.health": Record<string, never>;
   "system.profile.get": Record<string, never>;
 };
