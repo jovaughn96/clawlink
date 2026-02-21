@@ -465,38 +465,43 @@ actionRouter.post("/command", async (req, res) => {
 
   try {
     const commandResult = parseCommand(parsed.data.command);
-    const actionReq: ActionRequest = {
-      ...commandResult.actionRequest,
-      requestId: parsed.data.requestId,
+    const actionRequests: ActionRequest[] = commandResult.actionRequests.map((req, idx) => ({
+      ...req,
+      requestId: parsed.data.requestId ? `${parsed.data.requestId}-${idx + 1}` : undefined,
       source: parsed.data.source ?? "natural-command"
-    };
+    }));
 
-    const actionResponse = await fetch(`http://${env.host}:${env.port}/api/action`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-api-key": env.apiKey
-      },
-      body: JSON.stringify(actionReq)
-    });
-
-    const result = await actionResponse.json();
-    if (!actionResponse.ok) {
-      res.status(actionResponse.status).json({
-        ok: false,
-        error: "command_action_failed",
-        parsedAction: actionReq,
-        result
+    const results: unknown[] = [];
+    for (const actionReq of actionRequests) {
+      const actionResponse = await fetch(`http://${env.host}:${env.port}/api/action`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-api-key": env.apiKey
+        },
+        body: JSON.stringify(actionReq)
       });
-      return;
+
+      const result = await actionResponse.json();
+      if (!actionResponse.ok) {
+        res.status(actionResponse.status).json({
+          ok: false,
+          error: "command_action_failed",
+          failedAction: actionReq,
+          partialResults: results,
+          result
+        });
+        return;
+      }
+      results.push({ action: actionReq.action, result });
     }
 
     res.json({
       ok: true,
       command: parsed.data.command,
       normalized: commandResult.normalized,
-      parsedAction: actionReq,
-      result
+      parsedActions: actionRequests,
+      results
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

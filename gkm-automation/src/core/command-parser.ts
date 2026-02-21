@@ -2,7 +2,7 @@ import { inputAliases, meAliases, scenePresets } from "../config/profile.js";
 import type { ActionRequest } from "../types/actions.js";
 
 type ParsedCommand = {
-  actionRequest: ActionRequest;
+  actionRequests: ActionRequest[];
   normalized: string;
 };
 
@@ -20,6 +20,49 @@ function resolveMe(token?: string): 1 | 2 | undefined {
 export function parseCommand(command: string): ParsedCommand {
   const normalized = norm(command);
 
+  // Church shorthand intents
+  if (normalized === "go live" || normalized === "sermon mode") {
+    return {
+      normalized,
+      actionRequests: [
+        {
+          action: "atem.scene.compose",
+          payload: {
+            scene: "sermon-wide",
+            me: 1,
+            overlays: { usk1: true, usk2: false }
+          }
+        }
+      ]
+    };
+  }
+
+  if (normalized === "clear keys" || normalized === "clear overlays") {
+    return {
+      normalized,
+      actionRequests: [
+        { action: "atem.overlay.set", payload: { me: 1, layer: "usk1", enabled: false } },
+        { action: "atem.overlay.set", payload: { me: 1, layer: "usk2", enabled: false } },
+        { action: "atem.overlay.set", payload: { me: 2, layer: "usk1", enabled: false } },
+        { action: "atem.overlay.set", payload: { me: 2, layer: "usk2", enabled: false } }
+      ]
+    };
+  }
+
+  if (normalized === "lobby mirror on") {
+    return {
+      normalized,
+      actionRequests: [{ action: "atem.feed.mirror", payload: { fromMe: 1, toMe: 2 } }]
+    };
+  }
+
+  if (normalized === "lobby mirror off") {
+    return {
+      normalized,
+      actionRequests: [{ action: "atem.scene.take", payload: { scene: "auditorium-wide", me: 2 } }]
+    };
+  }
+
   const mirrorMatch = normalized.match(/^(mirror)\s+(\w+)\s+to\s+(\w+)(?:\s+with\s+overlays)?$/);
   if (mirrorMatch) {
     const fromMe = resolveMe(mirrorMatch[2]);
@@ -27,10 +70,12 @@ export function parseCommand(command: string): ParsedCommand {
     if (!fromMe || !toMe) throw new Error("Unknown ME alias in mirror command");
     return {
       normalized,
-      actionRequest: {
-        action: "atem.feed.mirror",
-        payload: { fromMe, toMe, includeOverlays: normalized.includes("with overlays") }
-      }
+      actionRequests: [
+        {
+          action: "atem.feed.mirror",
+          payload: { fromMe, toMe, includeOverlays: normalized.includes("with overlays") }
+        }
+      ]
     };
   }
 
@@ -56,10 +101,12 @@ export function parseCommand(command: string): ParsedCommand {
 
     return {
       normalized,
-      actionRequest: {
-        action: "atem.scene.compose",
-        payload: { scene, ...(me ? { me } : {}), ...(overlays ? { overlays } : {}) }
-      }
+      actionRequests: [
+        {
+          action: "atem.scene.compose",
+          payload: { scene, ...(me ? { me } : {}), ...(overlays ? { overlays } : {}) }
+        }
+      ]
     };
   }
 
@@ -72,10 +119,12 @@ export function parseCommand(command: string): ParsedCommand {
     if (!input) throw new Error("Unknown input alias");
     return {
       normalized,
-      actionRequest: {
-        action: "atem.me.program.set",
-        payload: { input, me }
-      }
+      actionRequests: [
+        {
+          action: "atem.me.program.set",
+          payload: { input, me }
+        }
+      ]
     };
   }
 
@@ -90,10 +139,12 @@ export function parseCommand(command: string): ParsedCommand {
     const me = resolveMe(overlayMatch[4]) ?? 1;
     return {
       normalized,
-      actionRequest: {
-        action: "atem.overlay.set",
-        payload: { me, layer, enabled }
-      }
+      actionRequests: [
+        {
+          action: "atem.overlay.set",
+          payload: { me, layer, enabled }
+        }
+      ]
     };
   }
 

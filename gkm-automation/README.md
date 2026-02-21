@@ -55,6 +55,11 @@ curl -s http://127.0.0.1:17816/api/command \
   -H "content-type: application/json" \
   -H "x-api-key: <API_KEY>" \
   -d '{"command":"mirror broadcast to auditorium"}'
+
+# shorthand intents
+curl -s http://127.0.0.1:17816/api/command -H "content-type: application/json" -H "x-api-key: <API_KEY>" -d '{"command":"go live"}'
+curl -s http://127.0.0.1:17816/api/command -H "content-type: application/json" -H "x-api-key: <API_KEY>" -d '{"command":"clear keys"}'
+curl -s http://127.0.0.1:17816/api/command -H "content-type: application/json" -H "x-api-key: <API_KEY>" -d '{"command":"lobby mirror on"}'
 ```
 
 ## Test calls (when you're ready)
