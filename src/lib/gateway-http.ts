@@ -25,16 +25,17 @@ export async function chatCompletion(
   if (user) {
     body.user = user;
   }
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${GATEWAY_TOKEN}`,
+  };
   if (sessionKey) {
-    body.session_key = sessionKey;
+    headers["x-openclaw-session-key"] = sessionKey;
   }
 
   return fetch(`${GATEWAY_URL}/v1/chat/completions`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${GATEWAY_TOKEN}`,
-    },
+    headers,
     body: JSON.stringify(body),
   });
 }
