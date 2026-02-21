@@ -21,6 +21,7 @@
   "author": "GKM Tech",
   "license": "MIT",
   "dependencies": {
+    "atem-connection": "^3.4.0",
     "better-sqlite3": "^11.8.1",
     "dotenv": "^16.4.5",
     "express": "^4.21.2",

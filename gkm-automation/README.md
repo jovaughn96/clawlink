@@ -9,16 +9,21 @@ Local 24/7 automation bridge for production control at Global Kingdom Ministries
 - Action allowlist policy via env (`ALLOWED_ACTIONS`)
 - Dry-run mode (`DRY_RUN=true` by default)
 - SQLite audit logging for every request/result
-- ATEM adapter stub + one real action contract (`atem.program.set`)
+- ATEM live wiring support via `atem-connection`
+- ProPresenter live wiring support via HTTP API
 - launchd service template for always-on runtime on macOS
 
-## Supported actions (v1)
+## Supported actions (current)
 
 - `system.health`
 - `atem.program.set` (input)
 - `atem.macro.run` (macroId)
+- `propresenter.trigger` (playlistId + itemId)
+- `propresenter.next`
+- `propresenter.previous`
+- `propresenter.clear` (`all|slides|media|audio`)
 
-> In scaffold mode, ATEM live calls are mocked unless `ATEM_MOCK=false` and adapter is completed.
+> Keep `DRY_RUN=true` until you are ready for production cutover.
 
 ## Setup
 
@@ -32,7 +37,7 @@ npm run build
 npm run start
 ```
 
-## Test
+## Test calls (when you're ready)
 
 ```bash
 curl -s http://127.0.0.1:17816/api/health -H "x-api-key: <API_KEY>"
@@ -59,13 +64,18 @@ launchctl start ai.gkm.automation
 launchctl list | grep ai.gkm.automation
 ```
 
+## ProPresenter wiring notes
+
+- Ensure ProPresenter API is enabled.
+- Set `PROPRESENTER_HOST`, `PROPRESENTER_PORT`, and optional `PROPRESENTER_PASSWORD`.
+- `propresenter.trigger` expects playlist + item identifiers (stable IDs from API output).
+
 ## Next steps
 
-1. Wire live ATEM integration (replace adapter stubs).
-2. Add ProPresenter adapter (`propresenter.trigger`, `propresenter.next`, `propresenter.clear`).
-3. Add Resolume adapter with strongly-typed actions.
-4. Add role tiers (`safe`, `show-critical`) + two-step confirmation for critical actions.
-5. Add OpenClaw-facing wrapper so Eden can call these actions safely.
+1. Add Resolume adapter with strongly-typed actions.
+2. Add role tiers (`safe`, `show-critical`) + two-step confirmation for critical actions.
+3. Add OpenClaw-facing wrapper so Eden can call these actions safely.
+4. Add preset scene names so you can say “walk-in loop”, “sermon lower-third”, etc.
 
 ## Security baseline
 
