@@ -33,10 +33,10 @@ export type ActionPayloadMap = {
     includeOverlays?: boolean;
   };
   "atem.macro.run": { macroId: number };
-  "propresenter.trigger": { playlistId: string; itemId: string };
-  "propresenter.next": Record<string, never>;
-  "propresenter.previous": Record<string, never>;
-  "propresenter.clear": { target?: "all" | "slides" | "media" | "audio" };
+  "propresenter.trigger": { playlistId: string; itemId: string; target?: string };
+  "propresenter.next": { target?: string };
+  "propresenter.previous": { target?: string };
+  "propresenter.clear": { target?: "all" | "slides" | "media" | "audio"; instance?: string };
   "system.health": Record<string, never>;
   "system.profile.get": Record<string, never>;
 };

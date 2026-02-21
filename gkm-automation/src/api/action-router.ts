@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { env } from "../config/env.js";
 import { keyLayers, meAliases, scenePresets, inputAliases } from "../config/profile.js";
+import { propresenterInstances } from "../config/propresenter-instances.js";
 import {
   getProgramInputForMe,
   runMacro,
@@ -84,27 +85,29 @@ const actionSchema = z.discriminatedUnion("action", [
     action: z.literal("propresenter.trigger"),
     payload: z.object({
       playlistId: z.string().min(1),
-      itemId: z.string().min(1)
+      itemId: z.string().min(1),
+      target: z.string().optional()
     }),
     requestId: z.string().optional(),
     source: z.string().optional()
   }),
   z.object({
     action: z.literal("propresenter.next"),
-    payload: z.object({}).default({}),
+    payload: z.object({ target: z.string().optional() }).default({}),
     requestId: z.string().optional(),
     source: z.string().optional()
   }),
   z.object({
     action: z.literal("propresenter.previous"),
-    payload: z.object({}).default({}),
+    payload: z.object({ target: z.string().optional() }).default({}),
     requestId: z.string().optional(),
     source: z.string().optional()
   }),
   z.object({
     action: z.literal("propresenter.clear"),
     payload: z.object({
-      target: z.enum(["all", "slides", "media", "audio"]).optional()
+      target: z.enum(["all", "slides", "media", "audio"]).optional(),
+      instance: z.string().optional()
     }),
     requestId: z.string().optional(),
     source: z.string().optional()
@@ -198,7 +201,15 @@ actionRouter.post("/action", async (req, res) => {
               name: env.propresenterName,
               host: env.propresenterHost,
               port: env.propresenterPort,
-              configuredAuth: Boolean(env.propresenterPass)
+              configuredAuth: Boolean(env.propresenterPass),
+              instances: propresenterInstances.map((x) => ({
+                id: x.id,
+                name: x.name,
+                host: x.host,
+                port: x.port,
+                roles: x.roles,
+                primary: Boolean(x.primary)
+              }))
             },
             profile: {
               scenes: Object.keys(scenePresets).length,
@@ -370,8 +381,13 @@ actionRouter.post("/action", async (req, res) => {
       }
       case "propresenter.trigger": {
         const data = env.dryRun
-          ? { playlistId: body.payload.playlistId, itemId: body.payload.itemId, simulated: true }
-          : await triggerPlaylistItem(body.payload.playlistId, body.payload.itemId);
+          ? {
+              playlistId: body.payload.playlistId,
+              itemId: body.payload.itemId,
+              target: body.payload.target ?? env.propresenterName,
+              simulated: true
+            }
+          : await triggerPlaylistItem(body.payload.playlistId, body.payload.itemId, body.payload.target);
         result = {
           ok: true,
           action: body.action,
@@ -384,7 +400,9 @@ actionRouter.post("/action", async (req, res) => {
         break;
       }
       case "propresenter.next": {
-        const data = env.dryRun ? { simulated: true } : await nextSlide();
+        const data = env.dryRun
+          ? { target: body.payload.target ?? env.propresenterName, simulated: true }
+          : await nextSlide(body.payload.target);
         result = {
           ok: true,
           action: body.action,
@@ -397,7 +415,9 @@ actionRouter.post("/action", async (req, res) => {
         break;
       }
       case "propresenter.previous": {
-        const data = env.dryRun ? { simulated: true } : await previousSlide();
+        const data = env.dryRun
+          ? { target: body.payload.target ?? env.propresenterName, simulated: true }
+          : await previousSlide(body.payload.target);
         result = {
           ok: true,
           action: body.action,
@@ -411,8 +431,12 @@ actionRouter.post("/action", async (req, res) => {
       }
       case "propresenter.clear": {
         const data = env.dryRun
-          ? { target: body.payload.target ?? "all", simulated: true }
-          : await clearLayer(body.payload.target ?? "all");
+          ? {
+              targetLayer: body.payload.target ?? "all",
+              target: body.payload.instance ?? env.propresenterName,
+              simulated: true
+            }
+          : await clearLayer(body.payload.target ?? "all", body.payload.instance);
         result = {
           ok: true,
           action: body.action,

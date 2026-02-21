@@ -56,6 +56,11 @@ curl -s http://127.0.0.1:17816/api/command \
   -H "x-api-key: <API_KEY>" \
   -d '{"command":"mirror broadcast to auditorium"}'
 
+curl -s http://127.0.0.1:17816/api/command \
+  -H "content-type: application/json" \
+  -H "x-api-key: <API_KEY>" \
+  -d '{"command":"next slide on studio"}'
+
 # shorthand intents
 curl -s http://127.0.0.1:17816/api/command -H "content-type: application/json" -H "x-api-key: <API_KEY>" -d '{"command":"go live"}'
 curl -s http://127.0.0.1:17816/api/command -H "content-type: application/json" -H "x-api-key: <API_KEY>" -d '{"command":"clear keys"}'
@@ -93,6 +98,7 @@ launchctl list | grep ai.gkm.automation
 
 - Ensure ProPresenter API is enabled.
 - Main configured instance (primary): `Pro7 - PC` at `172.16.14.223:64910`.
+- Secondary configured instance: `Studio iMac` at `172.16.12.148:1025`.
 - Set `PROPRESENTER_NAME`, `PROPRESENTER_HOST`, `PROPRESENTER_PORT`, and `PROPRESENTER_PASSWORD` in `.env`.
 - `propresenter.trigger` expects playlist + item identifiers (stable IDs from API output).
 

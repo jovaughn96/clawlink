@@ -63,6 +63,35 @@ export function parseCommand(command: string): ParsedCommand {
     };
   }
 
+  const ppNext = normalized.match(/^next slide(?: on ([a-z0-9\- ]+))?$/);
+  if (ppNext) {
+    return {
+      normalized,
+      actionRequests: [{ action: "propresenter.next", payload: ppNext[1] ? { target: ppNext[1].trim() } : {} }]
+    };
+  }
+
+  const ppPrev = normalized.match(/^previous slide(?: on ([a-z0-9\- ]+))?$/);
+  if (ppPrev) {
+    return {
+      normalized,
+      actionRequests: [{ action: "propresenter.previous", payload: ppPrev[1] ? { target: ppPrev[1].trim() } : {} }]
+    };
+  }
+
+  const ppClear = normalized.match(/^clear (all|slides|media|audio)(?: on ([a-z0-9\- ]+))?$/);
+  if (ppClear) {
+    return {
+      normalized,
+      actionRequests: [
+        {
+          action: "propresenter.clear",
+          payload: { target: ppClear[1] as "all" | "slides" | "media" | "audio", ...(ppClear[2] ? { instance: ppClear[2].trim() } : {}) }
+        }
+      ]
+    };
+  }
+
   const mirrorMatch = normalized.match(/^(mirror)\s+(\w+)\s+to\s+(\w+)(?:\s+with\s+overlays)?$/);
   if (mirrorMatch) {
     const fromMe = resolveMe(mirrorMatch[2]);
