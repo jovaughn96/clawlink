@@ -136,6 +136,17 @@ const components: Components = {
     return <em className="italic text-foreground/80">{children}</em>;
   },
 
+  img({ src, alt }) {
+    return (
+      <img
+        src={src || ""}
+        alt={alt || "image"}
+        className="my-2 max-h-80 w-auto max-w-full rounded-md border border-border"
+        loading="lazy"
+      />
+    );
+  },
+
   // Links
   a({ href, children }) {
     return (

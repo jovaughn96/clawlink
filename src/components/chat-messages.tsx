@@ -108,16 +108,26 @@ export function ChatMessages({ messages, streaming }: ChatMessagesProps) {
             );
           }
 
+          const hasInlineImage = /!\[[^\]]*\]\((data:image\/|https?:\/\/)/i.test(
+            msg.content || ""
+          );
+
           return (
             <FadeInUp key={i} delay={0}>
               {isUser ? (
-                /* User messages — terminal-style plain text */
-                <div className="font-mono text-sm leading-relaxed break-words whitespace-pre-wrap">
-                  <span className="select-none font-bold mr-2 text-primary">
-                    {">"}
-                  </span>
-                  <span className="text-foreground/90">{msg.content}</span>
-                </div>
+                hasInlineImage ? (
+                  <div className="rounded-md border border-border/60 bg-card/40 p-3">
+                    <MarkdownRenderer content={msg.content} />
+                  </div>
+                ) : (
+                  /* User messages — terminal-style plain text */
+                  <div className="font-mono text-sm leading-relaxed break-words whitespace-pre-wrap">
+                    <span className="select-none font-bold mr-2 text-primary">
+                      {">"}
+                    </span>
+                    <span className="text-foreground/90">{msg.content}</span>
+                  </div>
+                )
               ) : (
                 /* Assistant messages — rendered markdown */
                 <div className="group">
