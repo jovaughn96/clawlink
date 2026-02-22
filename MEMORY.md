@@ -15,3 +15,8 @@
 - Interruptions are okay any time.
 - Ask first when unsure unless Jo explicitly says otherwise.
 - No spending without explicit approval.
+
+## Repo/location guardrail (important)
+- `~/clawlink` is the real ClawLink app repo.
+- `~/.openclaw/workspace` is OpenClaw automation workspace and can contain similarly named experiments.
+- Before editing or pushing for ClawLink, always verify cwd/repo with `pwd`, `git rev-parse --show-toplevel`, and `git remote -v`.
