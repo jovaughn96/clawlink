@@ -152,16 +152,25 @@ export default function ChatPage() {
 
       try {
         abortRef.current = new AbortController();
+        const imageDataUrlRegex = /!\[[^\]]*\]\((data:image\/[^)]+)\)/gi;
+        const filtered = updated.filter(
+          (m) => m.role === "user" || m.role === "assistant"
+        );
+        const lastIndex = filtered.length - 1;
+
+        const outboundMessages = filtered.map((m, idx) => {
+          const isLast = idx === lastIndex;
+          const content = isLast
+            ? m.content
+            : m.content.replace(imageDataUrlRegex, "![image omitted](image-omitted)");
+          return { role: m.role, content };
+        });
+
         const res = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            messages: updated
-              .filter((m) => m.role === "user" || m.role === "assistant")
-              .map((m) => ({
-                role: m.role,
-                content: m.content,
-              })),
+            messages: outboundMessages,
             user: chatUser,
             sessionKey: activeSessionKey,
           }),

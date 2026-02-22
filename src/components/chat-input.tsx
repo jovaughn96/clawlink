@@ -25,16 +25,39 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = String(reader.result || "");
-      const caption = value.trim();
-      const content = `${caption ? `${caption}\n\n` : ""}![uploaded image](${dataUrl})`;
-      onSend(content);
-      setValue("");
-      if (fileRef.current) fileRef.current.value = "";
-    };
-    reader.readAsDataURL(file);
+    const toDataUrl = (blob: Blob) =>
+      new Promise<string>((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(String(r.result || ""));
+        r.onerror = reject;
+        r.readAsDataURL(blob);
+      });
+
+    const img = await createImageBitmap(file);
+    const max = 1280;
+    const scale = Math.min(1, max / Math.max(img.width, img.height));
+    const w = Math.max(1, Math.round(img.width * scale));
+    const h = Math.max(1, Math.round(img.height * scale));
+
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.drawImage(img, 0, 0, w, h);
+
+    const compressedBlob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob((b) => resolve(b), "image/jpeg", 0.72)
+    );
+
+    if (!compressedBlob) return;
+    const dataUrl = await toDataUrl(compressedBlob);
+
+    const caption = value.trim();
+    const content = `${caption ? `${caption}\n\n` : ""}![uploaded image](${dataUrl})`;
+    onSend(content);
+    setValue("");
+    if (fileRef.current) fileRef.current.value = "";
   }
 
   return (
