@@ -4,7 +4,9 @@ module.exports = {
   // OpenClaw gateway
   gateway: {
     url: process.env.OPENCLAW_GATEWAY_URL || "ws://127.0.0.1:18789",
-    authToken: process.env.OPENCLAW_GATEWAY_TOKEN || "",
+    // Keep empty by default; gateway issues/stores a device token per identity.
+    // Use EDENCHAT_OPENCLAW_TOKEN only if explicitly needed.
+    authToken: process.env.EDENCHAT_OPENCLAW_TOKEN || "",
   },
 
   // Firebase
