@@ -1,6 +1,3 @@
-// Supabase Edge Function scaffold: stripe-webhook
-// Set STRIPE_WEBHOOK_SECRET and STRIPE_SECRET_KEY
-
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import Stripe from "npm:stripe@16.10.0";
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -26,20 +23,36 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
+    const { data: existing } = await supabaseAdmin
+      .from("stripe_webhook_events")
+      .select("event_id")
+      .eq("event_id", event.id)
+      .maybeSingle();
+
+    if (existing) return new Response("ok");
+
     if (event.type === "payment_intent.succeeded") {
       const intent = event.data.object as Stripe.PaymentIntent;
       const appointmentId = intent.metadata?.appointment_id;
       if (appointmentId) {
         await supabaseAdmin
           .from("appointments")
-          .update({ deposit_paid_cents: intent.amount_received, status: "confirmed" })
+          .update({
+            deposit_paid_cents: intent.amount_received,
+            deposit_payment_intent_id: intent.id,
+            status: "confirmed",
+          })
           .eq("id", appointmentId);
       }
     }
 
+    await supabaseAdmin.from("stripe_webhook_events").insert({
+      event_id: event.id,
+      event_type: event.type,
+    });
+
     return new Response("ok");
   } catch (e) {
-    const message = e instanceof Error ? e.message : "Unknown error";
-    return new Response(message, { status: 400 });
+    return new Response(e instanceof Error ? e.message : "Unknown error", { status: 400 });
   }
 });

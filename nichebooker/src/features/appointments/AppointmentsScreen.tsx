@@ -9,8 +9,22 @@ export function AppointmentsScreen({ workspaceId }: { workspaceId: string }) {
   const [services, setServices] = useState<Service[]>([]);
   const [clientId, setClientId] = useState("");
   const [serviceId, setServiceId] = useState("");
+  const [clientQuery, setClientQuery] = useState("");
+  const [serviceQuery, setServiceQuery] = useState("");
   const [isoStart, setIsoStart] = useState(new Date().toISOString().slice(0, 16));
   const [depositLog, setDepositLog] = useState("");
+
+  const filteredClients = useMemo(() => {
+    const q = clientQuery.trim().toLowerCase();
+    if (!q) return clients;
+    return clients.filter((c) => `${c.first_name} ${c.last_name}`.toLowerCase().includes(q));
+  }, [clients, clientQuery]);
+
+  const filteredServices = useMemo(() => {
+    const q = serviceQuery.trim().toLowerCase();
+    if (!q) return services;
+    return services.filter((s) => s.name.toLowerCase().includes(q));
+  }, [services, serviceQuery]);
 
   const selectedService = useMemo(() => services.find((s) => s.id === serviceId), [services, serviceId]);
 
@@ -67,8 +81,9 @@ export function AppointmentsScreen({ workspaceId }: { workspaceId: string }) {
       <Text style={styles.title}>Appointments</Text>
 
       <Text style={styles.section}>Client</Text>
+      <TextInput style={styles.input} value={clientQuery} onChangeText={setClientQuery} placeholder="Search clients" />
       <View style={styles.chipWrap}>
-        {clients.map((c) => (
+        {filteredClients.map((c) => (
           <TouchableOpacity key={c.id} style={[styles.chip, clientId === c.id && styles.chipActive]} onPress={() => setClientId(c.id)}>
             <Text style={[styles.chipText, clientId === c.id && styles.chipTextActive]}>{c.first_name} {c.last_name}</Text>
           </TouchableOpacity>
@@ -76,8 +91,9 @@ export function AppointmentsScreen({ workspaceId }: { workspaceId: string }) {
       </View>
 
       <Text style={styles.section}>Service</Text>
+      <TextInput style={styles.input} value={serviceQuery} onChangeText={setServiceQuery} placeholder="Search services" />
       <View style={styles.chipWrap}>
-        {services.map((s) => (
+        {filteredServices.map((s) => (
           <TouchableOpacity key={s.id} style={[styles.chip, serviceId === s.id && styles.chipActive]} onPress={() => setServiceId(s.id)}>
             <Text style={[styles.chipText, serviceId === s.id && styles.chipTextActive]}>{s.name}</Text>
           </TouchableOpacity>

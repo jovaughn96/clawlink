@@ -1,6 +1,3 @@
-// Supabase Edge Function scaffold: create-deposit-intent
-// Deploy with: supabase functions deploy create-deposit-intent
-
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import Stripe from "npm:stripe@16.10.0";
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -20,20 +17,19 @@ Deno.serve(async (req) => {
 
     const {
       data: { user },
-      error: userErr,
     } = await supabase.auth.getUser();
-    if (userErr || !user) return new Response("Unauthorized", { status: 401 });
+    if (!user) return new Response("Unauthorized", { status: 401 });
 
     const { appointmentId } = await req.json();
     if (!appointmentId) return new Response("appointmentId required", { status: 400 });
 
-    const { data: appt, error: apptErr } = await supabase
+    const { data: appt } = await supabase
       .from("appointments")
-      .select("id, workspace_id, deposit_required_cents")
+      .select("id, workspace_id, deposit_required_cents, deposit_payment_intent_id")
       .eq("id", appointmentId)
       .single();
 
-    if (apptErr || !appt) return new Response("Appointment not found", { status: 404 });
+    if (!appt) return new Response("Appointment not found", { status: 404 });
 
     const { data: member } = await supabase
       .from("workspace_users")
@@ -48,16 +44,29 @@ Deno.serve(async (req) => {
       return Response.json({ paymentIntentId: null, clientSecret: null, message: "No deposit required" });
     }
 
-    const intent = await stripe.paymentIntents.create({
-      amount: appt.deposit_required_cents,
-      currency: "usd",
-      automatic_payment_methods: { enabled: true },
-      metadata: { appointment_id: appt.id, workspace_id: appt.workspace_id },
-    });
+    if (appt.deposit_payment_intent_id) {
+      const existing = await stripe.paymentIntents.retrieve(appt.deposit_payment_intent_id);
+      return Response.json({ paymentIntentId: existing.id, clientSecret: existing.client_secret });
+    }
+
+    const idemKey = `deposit:${appt.id}:${appt.deposit_required_cents}`;
+    const intent = await stripe.paymentIntents.create(
+      {
+        amount: appt.deposit_required_cents,
+        currency: "usd",
+        automatic_payment_methods: { enabled: true },
+        metadata: { appointment_id: appt.id, workspace_id: appt.workspace_id },
+      },
+      { idempotencyKey: idemKey }
+    );
+
+    await supabase
+      .from("appointments")
+      .update({ deposit_payment_intent_id: intent.id })
+      .eq("id", appt.id);
 
     return Response.json({ paymentIntentId: intent.id, clientSecret: intent.client_secret });
   } catch (e) {
-    const message = e instanceof Error ? e.message : "Unknown error";
-    return new Response(message, { status: 500 });
+    return new Response(e instanceof Error ? e.message : "Unknown error", { status: 500 });
   }
 });
