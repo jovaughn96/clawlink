@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Button, FlatList, StyleSheet, Text, TextInput, View } from "react-native";
-import { createService, listServices } from "../../lib/api";
+import { Alert, Button, FlatList, StyleSheet, Text, TextInput, View } from "react-native";
+import { createService, deleteService, listServices } from "../../lib/api";
 import type { Service } from "../../types/domain";
 
 export function ServicesScreen({ workspaceId }: { workspaceId: string }) {
@@ -24,6 +24,11 @@ export function ServicesScreen({ workspaceId }: { workspaceId: string }) {
     await load();
   }
 
+  async function remove(id: string) {
+    await deleteService(id);
+    await load();
+  }
+
   useEffect(() => {
     load();
   }, [workspaceId]);
@@ -41,7 +46,13 @@ export function ServicesScreen({ workspaceId }: { workspaceId: string }) {
         data={items}
         keyExtractor={(i) => i.id}
         renderItem={({ item }) => (
-          <Text>• {item.name} — ${item.price_cents / 100} / {item.duration_min}m</Text>
+          <View style={styles.itemRow}>
+            <Text>• {item.name} — ${item.price_cents / 100} / {item.duration_min}m</Text>
+            <Button title="Delete" color="#b91c1c" onPress={() => Alert.alert("Delete service?", item.name, [
+              { text: "Cancel", style: "cancel" },
+              { text: "Delete", style: "destructive", onPress: () => remove(item.id) },
+            ])} />
+          </View>
         )}
       />
     </View>
@@ -52,5 +63,6 @@ const styles = StyleSheet.create({
   card: { backgroundColor: "#fff", borderRadius: 12, padding: 16, gap: 8 },
   title: { fontSize: 18, fontWeight: "700" },
   row: { flexDirection: "row", gap: 8, alignItems: "center" },
+  itemRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   input: { flex: 1, borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 8, padding: 8 },
 });

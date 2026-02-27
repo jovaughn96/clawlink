@@ -38,9 +38,19 @@ Run migration in `supabase/migrations/0001_init.sql`.
 - Appointment creation + upcoming list
 - SQL migration for `workspace_users`, RLS policies, and niche config seed
 
+## Implemented in Phase 3
+
+- Appointment client/service quick selectors (chips) instead of raw ID-only flow
+- Delete actions for clients/services/appointments
+- Stripe deposit intent client call scaffold (`createDepositIntent`)
+- Supabase Edge Function scaffolds:
+  - `supabase/functions/create-deposit-intent/index.ts`
+  - `supabase/functions/stripe-webhook/index.ts`
+
 ## Next steps
 
-1. Replace manual ID input with proper pickers/selectors
-2. Add Stripe deposits + reminder jobs
-3. Add update/delete flows for clients/services/appointments
+1. Replace quick chip selectors with searchable dropdowns
+2. Build proper edit forms (not just delete)
+3. Add reminder scheduler (24h / 2h) + delivery logs
 4. Implement dynamic niche forms from `niche_configs`
+5. Add Stripe customer/payment method reuse and receipts

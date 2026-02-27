@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Button, FlatList, StyleSheet, Text, TextInput, View } from "react-native";
-import { createAppointment, listAppointments, listClients, listServices } from "../../lib/api";
+import { Alert, Button, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { createAppointment, createDepositIntent, deleteAppointment, listAppointments, listClients, listServices } from "../../lib/api";
 import type { Appointment, Client, Service } from "../../types/domain";
 
 export function AppointmentsScreen({ workspaceId }: { workspaceId: string }) {
@@ -10,6 +10,7 @@ export function AppointmentsScreen({ workspaceId }: { workspaceId: string }) {
   const [clientId, setClientId] = useState("");
   const [serviceId, setServiceId] = useState("");
   const [isoStart, setIsoStart] = useState(new Date().toISOString().slice(0, 16));
+  const [depositLog, setDepositLog] = useState("");
 
   const selectedService = useMemo(() => services.find((s) => s.id === serviceId), [services, serviceId]);
 
@@ -47,6 +48,16 @@ export function AppointmentsScreen({ workspaceId }: { workspaceId: string }) {
     await load();
   }
 
+  async function remove(id: string) {
+    await deleteAppointment(id);
+    await load();
+  }
+
+  async function startDepositIntent(appointmentId: string) {
+    const res = await createDepositIntent(appointmentId);
+    setDepositLog(`Deposit intent: ${res.paymentIntentId ?? "n/a"}`);
+  }
+
   useEffect(() => {
     load();
   }, [workspaceId]);
@@ -54,28 +65,44 @@ export function AppointmentsScreen({ workspaceId }: { workspaceId: string }) {
   return (
     <View style={styles.card}>
       <Text style={styles.title}>Appointments</Text>
-      <TextInput style={styles.input} value={clientId} onChangeText={setClientId} placeholder="client id" />
-      <TextInput style={styles.input} value={serviceId} onChangeText={setServiceId} placeholder="service id" />
+
+      <Text style={styles.section}>Client</Text>
+      <View style={styles.chipWrap}>
+        {clients.map((c) => (
+          <TouchableOpacity key={c.id} style={[styles.chip, clientId === c.id && styles.chipActive]} onPress={() => setClientId(c.id)}>
+            <Text style={[styles.chipText, clientId === c.id && styles.chipTextActive]}>{c.first_name} {c.last_name}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <Text style={styles.section}>Service</Text>
+      <View style={styles.chipWrap}>
+        {services.map((s) => (
+          <TouchableOpacity key={s.id} style={[styles.chip, serviceId === s.id && styles.chipActive]} onPress={() => setServiceId(s.id)}>
+            <Text style={[styles.chipText, serviceId === s.id && styles.chipTextActive]}>{s.name}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
       <TextInput style={styles.input} value={isoStart} onChangeText={setIsoStart} placeholder="YYYY-MM-DDTHH:mm" />
       <Button title="Create appointment" onPress={add} />
-      <Text style={styles.subtle}>Tip: copy IDs from list below for now (UI picker next).</Text>
-
-      <Text style={styles.section}>Client IDs</Text>
-      {clients.map((c) => (
-        <Text key={c.id} style={styles.mono}>{c.id.slice(0, 8)}… → {c.first_name} {c.last_name}</Text>
-      ))}
-
-      <Text style={styles.section}>Service IDs</Text>
-      {services.map((s) => (
-        <Text key={s.id} style={styles.mono}>{s.id.slice(0, 8)}… → {s.name}</Text>
-      ))}
+      {!!depositLog && <Text style={styles.subtle}>{depositLog}</Text>}
 
       <Text style={styles.section}>Upcoming</Text>
       <FlatList
         data={items}
         keyExtractor={(i) => i.id}
         renderItem={({ item }) => (
-          <Text>• {new Date(item.starts_at).toLocaleString()} — ${(item.subtotal_cents / 100).toFixed(2)} ({item.status})</Text>
+          <View style={styles.item}>
+            <Text>• {new Date(item.starts_at).toLocaleString()} — ${(item.subtotal_cents / 100).toFixed(2)} ({item.status})</Text>
+            <View style={styles.row}>
+              <Button title="Deposit" onPress={() => startDepositIntent(item.id)} />
+              <Button title="Delete" color="#b91c1c" onPress={() => Alert.alert("Delete appointment?", "This cannot be undone.", [
+                { text: "Cancel", style: "cancel" },
+                { text: "Delete", style: "destructive", onPress: () => remove(item.id) },
+              ])} />
+            </View>
+          </View>
         )}
       />
     </View>
@@ -88,5 +115,11 @@ const styles = StyleSheet.create({
   input: { borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 8, padding: 8 },
   subtle: { color: "#6b7280", fontSize: 12 },
   section: { fontWeight: "700", marginTop: 8 },
-  mono: { fontFamily: "Courier", fontSize: 12 },
+  chipWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  chip: { backgroundColor: "#e5e7eb", borderRadius: 999, paddingVertical: 6, paddingHorizontal: 10 },
+  chipActive: { backgroundColor: "#111827" },
+  chipText: { color: "#111827" },
+  chipTextActive: { color: "white" },
+  item: { paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#e5e7eb", gap: 6 },
+  row: { flexDirection: "row", gap: 8 },
 });

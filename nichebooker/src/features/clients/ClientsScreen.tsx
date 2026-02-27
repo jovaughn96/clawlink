@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Button, FlatList, StyleSheet, Text, TextInput, View } from "react-native";
-import { createClient, listClients } from "../../lib/api";
+import { Alert, Button, FlatList, StyleSheet, Text, TextInput, View } from "react-native";
+import { createClient, deleteClient, listClients } from "../../lib/api";
 import type { Client } from "../../types/domain";
 
 export function ClientsScreen({ workspaceId }: { workspaceId: string }) {
@@ -20,6 +20,11 @@ export function ClientsScreen({ workspaceId }: { workspaceId: string }) {
     await load();
   }
 
+  async function remove(id: string) {
+    await deleteClient(id);
+    await load();
+  }
+
   useEffect(() => {
     load();
   }, [workspaceId]);
@@ -35,7 +40,15 @@ export function ClientsScreen({ workspaceId }: { workspaceId: string }) {
       <FlatList
         data={items}
         keyExtractor={(i) => i.id}
-        renderItem={({ item }) => <Text>• {item.first_name} {item.last_name}</Text>}
+        renderItem={({ item }) => (
+          <View style={styles.itemRow}>
+            <Text>• {item.first_name} {item.last_name}</Text>
+            <Button title="Delete" color="#b91c1c" onPress={() => Alert.alert("Delete client?", `${item.first_name} ${item.last_name}`, [
+              { text: "Cancel", style: "cancel" },
+              { text: "Delete", style: "destructive", onPress: () => remove(item.id) },
+            ])} />
+          </View>
+        )}
       />
     </View>
   );
@@ -45,5 +58,6 @@ const styles = StyleSheet.create({
   card: { backgroundColor: "#fff", borderRadius: 12, padding: 16, gap: 8 },
   title: { fontSize: 18, fontWeight: "700" },
   row: { flexDirection: "row", gap: 8, alignItems: "center" },
+  itemRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   input: { flex: 1, borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 8, padding: 8 },
 });

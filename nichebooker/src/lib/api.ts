@@ -66,6 +66,11 @@ export async function createClient(
   return data as Client;
 }
 
+export async function deleteClient(clientId: string) {
+  const { error } = await supabase.from("clients").delete().eq("id", clientId);
+  if (error) throw error;
+}
+
 export async function listServices(workspaceId: string) {
   const { data, error } = await supabase
     .from("services")
@@ -87,6 +92,11 @@ export async function createService(
     .single();
   if (error) throw error;
   return data as Service;
+}
+
+export async function deleteService(serviceId: string) {
+  const { error } = await supabase.from("services").delete().eq("id", serviceId);
+  if (error) throw error;
 }
 
 export async function listAppointments(workspaceId: string) {
@@ -118,4 +128,17 @@ export async function createAppointment(
     .single();
   if (error) throw error;
   return data as Appointment;
+}
+
+export async function deleteAppointment(appointmentId: string) {
+  const { error } = await supabase.from("appointments").delete().eq("id", appointmentId);
+  if (error) throw error;
+}
+
+export async function createDepositIntent(appointmentId: string) {
+  const { data, error } = await supabase.functions.invoke("create-deposit-intent", {
+    body: { appointmentId },
+  });
+  if (error) throw error;
+  return data as { clientSecret?: string; paymentIntentId?: string };
 }
