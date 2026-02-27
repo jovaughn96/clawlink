@@ -1,5 +1,5 @@
 import { supabase } from "./supabase";
-import type { Appointment, Client, Service, Workspace } from "../types/domain";
+import type { Appointment, Client, MessageLog, ReminderJob, Service, Workspace } from "../types/domain";
 
 export async function getSessionUserId() {
   const { data, error } = await supabase.auth.getUser();
@@ -110,6 +110,34 @@ export async function listAppointments(workspaceId: string) {
   return (data ?? []) as Appointment[];
 }
 
+async function upsertAppointmentReminders(appointment: Appointment) {
+  const startAtMs = new Date(appointment.starts_at).getTime();
+  if (Number.isNaN(startAtMs)) return;
+
+  const reminderPayload = [
+    { reminder_type: "24h" as const, scheduled_for: new Date(startAtMs - 24 * 60 * 60 * 1000).toISOString() },
+    { reminder_type: "2h" as const, scheduled_for: new Date(startAtMs - 2 * 60 * 60 * 1000).toISOString() },
+  ];
+
+  const nowIso = new Date().toISOString();
+  const pendingOrFuture = reminderPayload.filter((item) => item.scheduled_for > nowIso);
+  if (!pendingOrFuture.length) return;
+
+  const { error } = await supabase.from("reminder_jobs").upsert(
+    pendingOrFuture.map((item) => ({
+      workspace_id: appointment.workspace_id,
+      appointment_id: appointment.id,
+      reminder_type: item.reminder_type,
+      scheduled_for: item.scheduled_for,
+      status: "pending",
+      last_error: null,
+    })),
+    { onConflict: "appointment_id,reminder_type" }
+  );
+
+  if (error) throw error;
+}
+
 export async function createAppointment(
   workspaceId: string,
   payload: Pick<Appointment, "client_id" | "service_id" | "starts_at" | "ends_at" | "timezone" | "subtotal_cents"> &
@@ -127,12 +155,56 @@ export async function createAppointment(
     .select("*")
     .single();
   if (error) throw error;
-  return data as Appointment;
+
+  const appointment = data as Appointment;
+  await upsertAppointmentReminders(appointment);
+
+  return appointment;
+}
+
+export async function updateAppointmentSchedule(
+  appointmentId: string,
+  updates: Pick<Appointment, "starts_at" | "ends_at" | "timezone"> & Partial<Pick<Appointment, "status">>
+) {
+  const { data, error } = await supabase
+    .from("appointments")
+    .update(updates)
+    .eq("id", appointmentId)
+    .select("*")
+    .single();
+  if (error) throw error;
+
+  const appointment = data as Appointment;
+  await upsertAppointmentReminders(appointment);
+
+  return appointment;
 }
 
 export async function deleteAppointment(appointmentId: string) {
   const { error } = await supabase.from("appointments").delete().eq("id", appointmentId);
   if (error) throw error;
+}
+
+export async function listReminderJobs(workspaceId: string) {
+  const { data, error } = await supabase
+    .from("reminder_jobs")
+    .select("*")
+    .eq("workspace_id", workspaceId)
+    .order("scheduled_for", { ascending: true })
+    .limit(50);
+  if (error) throw error;
+  return (data ?? []) as ReminderJob[];
+}
+
+export async function listMessageLogs(workspaceId: string) {
+  const { data, error } = await supabase
+    .from("message_logs")
+    .select("*")
+    .eq("workspace_id", workspaceId)
+    .order("created_at", { ascending: false })
+    .limit(50);
+  if (error) throw error;
+  return (data ?? []) as MessageLog[];
 }
 
 export async function createDepositIntent(appointmentId: string) {

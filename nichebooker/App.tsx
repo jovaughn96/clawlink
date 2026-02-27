@@ -1,6 +1,7 @@
 import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useEffect, useState } from "react";
 import { DashboardScreen } from "./src/features/dashboard/DashboardScreen";
+import { RemindersScreen } from "./src/features/dashboard/RemindersScreen";
 import { ClientsScreen } from "./src/features/clients/ClientsScreen";
 import { ServicesScreen } from "./src/features/services/ServicesScreen";
 import { AppointmentsScreen } from "./src/features/appointments/AppointmentsScreen";
@@ -10,7 +11,7 @@ import { ensureWorkspace } from "./src/lib/api";
 import { supabase } from "./src/lib/supabase";
 import type { Workspace } from "./src/types/domain";
 
-type TabKey = "dashboard" | "clients" | "services" | "appointments";
+type TabKey = "dashboard" | "clients" | "services" | "appointments" | "reminders";
 
 export default function App() {
   const hasEnv = Boolean(env.supabaseUrl && env.supabaseAnonKey);
@@ -50,7 +51,7 @@ export default function App() {
             <>
               <Text style={styles.sub}>{workspace.name} • {workspace.niche_key}</Text>
               <View style={styles.tabs}>
-                {(["dashboard", "clients", "services", "appointments"] as TabKey[]).map((key) => (
+                {(["dashboard", "clients", "services", "appointments", "reminders"] as TabKey[]).map((key) => (
                   <TouchableOpacity
                     key={key}
                     style={[styles.tab, tab === key && styles.tabActive]}
@@ -65,6 +66,7 @@ export default function App() {
               {tab === "clients" && <ClientsScreen workspaceId={workspace.id} />}
               {tab === "services" && <ServicesScreen workspaceId={workspace.id} />}
               {tab === "appointments" && <AppointmentsScreen workspaceId={workspace.id} />}
+              {tab === "reminders" && <RemindersScreen workspaceId={workspace.id} />}
             </>
           )}
         </ScrollView>

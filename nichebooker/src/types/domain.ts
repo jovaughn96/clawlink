@@ -47,7 +47,33 @@ export interface Appointment {
   subtotal_cents: number;
   deposit_required_cents: number;
   deposit_paid_cents: number;
+  deposit_payment_intent_id?: string;
   location_text?: string;
   notes?: string;
   custom_fields_json?: Record<string, unknown>;
+}
+
+export interface ReminderJob {
+  id: string;
+  workspace_id: string;
+  appointment_id: string;
+  reminder_type: "24h" | "2h";
+  scheduled_for: string;
+  status: "pending" | "processing" | "sent" | "failed" | "cancelled";
+  attempts: number;
+  last_error?: string;
+  created_at: string;
+}
+
+export interface MessageLog {
+  id: string;
+  workspace_id: string;
+  appointment_id?: string;
+  channel: "sms" | "email";
+  recipient?: string;
+  template_key?: string;
+  status: "queued" | "sent" | "failed";
+  payload_json: Record<string, unknown>;
+  created_at: string;
+  sent_at?: string;
 }

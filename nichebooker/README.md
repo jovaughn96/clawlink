@@ -47,10 +47,17 @@ Run migration in `supabase/migrations/0001_init.sql`.
   - `supabase/functions/create-deposit-intent/index.ts`
   - `supabase/functions/stripe-webhook/index.ts`
 
+## Implemented in Phase 5
+
+- `send-reminders` now attempts real delivery:
+  - SMS via Twilio (`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`)
+  - Email fallback via Resend (`RESEND_API_KEY`, `RESEND_FROM_EMAIL`)
+- Reminder jobs auto-upsert on appointment create (and through shared update helper)
+- Lightweight in-app **Reminders** tab to inspect scheduled jobs + recent message logs
+
 ## Next steps
 
-1. Replace quick chip selectors with searchable dropdowns
-2. Build proper edit forms (not just delete)
-3. Add reminder scheduler (24h / 2h) + delivery logs
-4. Implement dynamic niche forms from `niche_configs`
-5. Add Stripe customer/payment method reuse and receipts
+1. Add reminder cancellation/rebuild when appointments are cancelled/rescheduled in UI
+2. Implement dynamic niche forms from `niche_configs`
+3. Add Stripe customer/payment method reuse and receipts
+4. Add robust provider retry/backoff + dead-letter flow for reminders
