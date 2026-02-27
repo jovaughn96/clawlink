@@ -29,9 +29,18 @@ Run migration in `supabase/migrations/0001_init.sql`.
 - Placeholder feature screens
 - Initial SQL schema
 
+## Implemented in Phase 2
+
+- Email/password auth gate (sign in or sign up)
+- Workspace bootstrap per signed-in user
+- Clients CRUD (create + list)
+- Services CRUD (create + list)
+- Appointment creation + upcoming list
+- SQL migration for `workspace_users`, RLS policies, and niche config seed
+
 ## Next steps
 
-1. Wire Auth and workspace bootstrap
-2. Build clients/services/appointments CRUD
-3. Add Stripe deposits + reminder jobs
-4. Implement niche config loader and dynamic form rendering
+1. Replace manual ID input with proper pickers/selectors
+2. Add Stripe deposits + reminder jobs
+3. Add update/delete flows for clients/services/appointments
+4. Implement dynamic niche forms from `niche_configs`

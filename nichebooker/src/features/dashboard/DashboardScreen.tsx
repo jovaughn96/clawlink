@@ -1,9 +1,10 @@
 import { View, Text, StyleSheet } from "react-native";
 
-export function DashboardScreen() {
+export function DashboardScreen({ workspaceName }: { workspaceName: string }) {
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>Dashboard (MVP)</Text>
+      <Text style={styles.title}>Dashboard</Text>
+      <Text>Workspace: {workspaceName}</Text>
       <Text>• Bookings today</Text>
       <Text>• No-show rate</Text>
       <Text>• Revenue this week</Text>
